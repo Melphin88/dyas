@@ -169,7 +169,7 @@ export function AdminPanel({ accounts, studentGrades, onAddAccount, onDeleteAcco
       setIsLoading(prev => ({...prev, [type]: true}));
       console.log(`Loading ${type} files...`);
       
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-72188212/csv-files/${type}`, {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/csv-files/${type}`, {
         headers: {
           'Authorization': `Bearer ${publicAnonKey}`
         }
@@ -231,7 +231,7 @@ export function AdminPanel({ accounts, studentGrades, onAddAccount, onDeleteAcco
     try {
       console.log(`Loading ${type} file data for ${fileId}...`);
       
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-72188212/csv-data/${type}/${fileId}`, {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/csv-data/${type}/${fileId}`, {
         headers: {
           'Authorization': `Bearer ${publicAnonKey}`
         }
@@ -407,7 +407,7 @@ export function AdminPanel({ accounts, studentGrades, onAddAccount, onDeleteAcco
         console.log(`Uploading ${type} data to server...`);
         
         // 서버에 업로드
-        const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-72188212/upload-csv-file/${type}`, {
+        const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/upload-csv-file/${type}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -484,7 +484,7 @@ export function AdminPanel({ accounts, studentGrades, onAddAccount, onDeleteAcco
     try {
       console.log(`Applying ${type} file ${fileId}...`);
       
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-72188212/apply-csv-file/${type}/${fileId}`, {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/apply-csv-file/${type}/${fileId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${publicAnonKey}`
@@ -513,7 +513,7 @@ export function AdminPanel({ accounts, studentGrades, onAddAccount, onDeleteAcco
     try {
       console.log(`Deleting ${type} file ${fileId}...`);
       
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-72188212/csv-file/${type}/${fileId}`, {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/csv-file/${type}/${fileId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${publicAnonKey}`
@@ -549,7 +549,7 @@ export function AdminPanel({ accounts, studentGrades, onAddAccount, onDeleteAcco
     try {
       console.log(`Downloading ${type} file ${file.id}...`);
       
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-72188212/csv-data/${type}/${file.id}`, {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/csv-data/${type}/${file.id}`, {
         headers: {
           'Authorization': `Bearer ${publicAnonKey}`
         }
