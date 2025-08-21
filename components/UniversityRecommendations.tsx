@@ -503,7 +503,7 @@ export function UniversityRecommendations({
                 <h5 className="font-medium text-gold-800 mb-2">추천 우선순위:</h5>
                 <ol className="list-decimal list-inside space-y-1 text-gold-700">
                   <li>지망학과 관련성 (입력한 경우)</li>
-                  <li>합격 가능성 등급 (S > A > B > C)</li>
+                  <li>합격 가능성 등급 (S &gt; A &gt; B &gt; C)</li>
                   <li>예상 합격률</li>
                 </ol>
               </div>
