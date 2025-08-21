@@ -52,6 +52,7 @@ export function UniversityRecommendations({
   const [susiData, setSusiData] = useState<SusiUniversityData[]>([]);
   const [jeongsiData, setJeongsiData] = useState<JeongsiUniversityData[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
   useEffect(() => {
     console.log('🔍 UniversityRecommendations 초기화');
@@ -68,6 +69,7 @@ export function UniversityRecommendations({
   const loadRealData = async () => {
     console.log('🌐 Supabase에서 실제 데이터 로드 시작...');
     setLoading(true);
+    setDebugInfo('데이터 로드 중...');
 
     try {
       // Supabase 클라이언트 동적 import
@@ -78,37 +80,50 @@ export function UniversityRecommendations({
         publicAnonKey
       );
 
+      console.log('📊 Supabase 클라이언트 생성 완료');
+
       // 수시 데이터 로드
+      console.log('📈 수시 데이터 로드 중...');
       const { data: susiResult, error: susiError } = await supabase
         .from('susi_university_data')
         .select('*')
         .limit(1000);
 
       if (susiError) {
-        console.error('수시 데이터 로드 오류:', susiError);
+        console.error('❌ 수시 데이터 로드 오류:', susiError);
+      } else {
+        console.log('✅ 수시 데이터 로드 성공:', susiResult?.length || 0, '개');
       }
 
       // 정시 데이터 로드
+      console.log('📈 정시 데이터 로드 중...');
       const { data: jeongsiResult, error: jeongsiError } = await supabase
         .from('jeongsi_university_data')
         .select('*')
         .limit(1000);
 
       if (jeongsiError) {
-        console.error('정시 데이터 로드 오류:', jeongsiError);
+        console.error('❌ 정시 데이터 로드 오류:', jeongsiError);
+      } else {
+        console.log('✅ 정시 데이터 로드 성공:', jeongsiResult?.length || 0, '개');
       }
 
       setSusiData(susiResult || []);
       setJeongsiData(jeongsiResult || []);
       setDataLoaded(true);
       
+      const totalData = (susiResult?.length || 0) + (jeongsiResult?.length || 0);
+      setDebugInfo(`데이터 로드 완료: 수시 ${susiResult?.length || 0}개, 정시 ${jeongsiResult?.length || 0}개 (총 ${totalData}개)`);
+      
       console.log('✅ 실제 데이터 로드 완료:', {
         수시: susiResult?.length || 0,
-        정시: jeongsiResult?.length || 0
+        정시: jeongsiResult?.length || 0,
+        총합: totalData
       });
       
     } catch (error) {
       console.error('❌ 데이터 로드 실패:', error);
+      setDebugInfo(`데이터 로드 실패: ${error}`);
       setSusiData([]);
       setJeongsiData([]);
       setDataLoaded(true);
@@ -119,8 +134,15 @@ export function UniversityRecommendations({
 
   const generateRecommendations = () => {
     console.log('🔄 추천 대학 생성 시작...');
+    console.log('📊 현재 데이터 상태:', {
+      수시데이터: susiData.length,
+      정시데이터: jeongsiData.length,
+      내신성적: gradeData ? '있음' : '없음',
+      수능성적: suneungData ? '있음' : '없음'
+    });
     
     if (susiData.length === 0 && jeongsiData.length === 0) {
+      console.log('❌ 대학 데이터가 없습니다');
       setRecommendations({ susi: [], jeongsi_ga: [], jeongsi_na: [], jeongsi_da: [] });
       return;
     }
@@ -128,13 +150,24 @@ export function UniversityRecommendations({
     const gradeAvg = gradeData ? calculateGradeAverage(gradeData) : 0;
     const suneungAvg = suneungData ? calculateSuneungAverage(suneungData) : 0;
 
-    console.log('성적 평균:', { gradeAvg, suneungAvg });
+    console.log('📈 성적 평균:', { 
+      내신평균: gradeAvg, 
+      수능평균: suneungAvg,
+      내신데이터: gradeData,
+      수능데이터: suneungData
+    });
 
     // 수시 추천 (20개)
     const susiRecommendations = susiData
-      .filter(uni => gradeAvg > 0 && (uni.grade_70_cut > 0 || uni.grade_50_cut > 0))
+      .filter(uni => {
+        const hasGrade = gradeAvg > 0;
+        const hasCutGrade = uni.grade_70_cut > 0 || uni.grade_50_cut > 0;
+        console.log(`수시 필터링: ${uni.university} ${uni.department} - 성적있음:${hasGrade}, 컷등급있음:${hasCutGrade}`);
+        return hasGrade && hasCutGrade;
+      })
       .map(uni => {
         const probability = calculateSusiProbability(uni, gradeAvg);
+        console.log(`수시 계산: ${uni.university} ${uni.department} - 합격률:${probability}%`);
         return {
           ...uni,
           예상합격률: Math.round(probability),
@@ -151,11 +184,19 @@ export function UniversityRecommendations({
       })
       .slice(0, 20);
 
+    console.log('📊 수시 추천 결과:', susiRecommendations.length, '개');
+
     // 정시 추천 (가/나/다군으로 분류, 각각 5개씩)
     const jeongsiRecommendations = jeongsiData
-      .filter(uni => suneungAvg > 0 && (uni.grade_70_cut > 0 || uni.grade_50_cut > 0))
+      .filter(uni => {
+        const hasSuneung = suneungAvg > 0;
+        const hasCutGrade = uni.grade_70_cut > 0 || uni.grade_50_cut > 0;
+        console.log(`정시 필터링: ${uni.university} ${uni.department} - 수능있음:${hasSuneung}, 컷등급있음:${hasCutGrade}`);
+        return hasSuneung && hasCutGrade;
+      })
       .map(uni => {
         const probability = calculateJeongsiProbability(uni, suneungAvg);
+        console.log(`정시 계산: ${uni.university} ${uni.department} - 합격률:${probability}%`);
         return {
           ...uni,
           예상합격률: Math.round(probability),
@@ -194,11 +235,15 @@ export function UniversityRecommendations({
       jeongsi_da: jeongsiDa
     });
 
+    const totalRecommendations = susiRecommendations.length + jeongsiGa.length + jeongsiNa.length + jeongsiDa.length;
+    setDebugInfo(`추천 완료: 수시 ${susiRecommendations.length}개, 정시 ${jeongsiGa.length + jeongsiNa.length + jeongsiDa.length}개 (총 ${totalRecommendations}개)`);
+
     console.log('✅ 추천 완료:', {
       수시: susiRecommendations.length,
       정시가군: jeongsiGa.length,
       정시나군: jeongsiNa.length,
-      정시다군: jeongsiDa.length
+      정시다군: jeongsiDa.length,
+      총합: totalRecommendations
     });
   };
 
@@ -252,6 +297,11 @@ export function UniversityRecommendations({
   return (
     <div className="min-h-screen bg-navy-50 p-4">
       <div className="max-w-6xl mx-auto">
+        {/* 디버그 정보 */}
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm">
+          <strong>디버그 정보:</strong> {debugInfo}
+        </div>
+
         {onBack && (
           <button onClick={onBack} className="mb-4 px-4 py-2 border border-navy-300 text-navy-700 hover:bg-navy-100 rounded-md">
             ← 이전으로
