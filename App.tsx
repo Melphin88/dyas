@@ -169,7 +169,7 @@ function App() {
     if (!supabase || isDevelopmentMode()) return;
     
     try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-72188212/my-scores`, {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/my-scores`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -309,7 +309,7 @@ function App() {
           전문교과등급: specialtyGrade ? parseFloat(specialtyGrade.toFixed(2)) : null
         };
 
-        await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-72188212/save-scores`, {
+        await fetch(`https://${projectId}.supabase.co/functions/v1/server/save-scores`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -341,7 +341,7 @@ function App() {
           수능탐구2: data.inquiry2 || null
         };
 
-        await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-72188212/save-scores`, {
+        await fetch(`https://${projectId}.supabase.co/functions/v1/server/save-scores`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -442,7 +442,7 @@ function App() {
                 onClick={handleLogout}
                 className="text-navy-600 hover:text-navy-800 transition-colors"
               >
-                로���아웃
+                로그아웃
               </button>
             </div>
           </div>
