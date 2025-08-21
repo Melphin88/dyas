@@ -13,9 +13,9 @@ interface UniversityData {
   university: string;
   department: string;
   admissionType: string;
-  군: string;
-  내신등급: number;
-  수능등급: number;
+  지역: string;
+  수능점수: number;
+  내신점수: number;
   합격률: number;
 }
 
@@ -42,13 +42,13 @@ export function SupabaseUpload({ onUploadSuccess }: SupabaseUploadProps) {
       const headers = lines[0].split(',').map(h => h.trim());
       
       // 예상 헤더 확인
-      const expectedHeaders = ['university', 'department', 'admissionType', '군', '내신등급', '수능등급', '합격률'];
+      const expectedHeaders = ['university', 'department', 'admissionType', '지역', '수능점수', '내신점수', '합격률'];
       const hasValidHeaders = expectedHeaders.every(header => 
         headers.some(h => h.includes(header) || h.includes(header.replace('admissionType', '전형')) || h.includes('대학명') || h.includes('학과'))
       );
 
       if (!hasValidHeaders) {
-        setMessage('CSV 헤더를 확인해주세요. 예시: university,department,admissionType,군,내신등급,수능등급,합격률');
+        setMessage('CSV 헤더를 확인해주세요. 예시: university,department,admissionType,지역,수능점수,내신점수,합격률');
         setLoading(false);
         return;
       }
@@ -59,9 +59,9 @@ export function SupabaseUpload({ onUploadSuccess }: SupabaseUploadProps) {
           university: values[0] || '',
           department: values[1] || '',
           admissionType: values[2] || '',
-          군: values[3] || '',
-          내신등급: parseFloat(values[4]) || 0,
-          수능등급: parseFloat(values[5]) || 0,
+          지역: values[3] || '',
+          수능점수: parseFloat(values[4]) || 0,
+          내신점수: parseFloat(values[5]) || 0,
           합격률: parseFloat(values[6]) || 0
         };
       }).filter(data => data.university && data.department);
@@ -72,7 +72,13 @@ export function SupabaseUpload({ onUploadSuccess }: SupabaseUploadProps) {
         return;
       }
 
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-72188212/upload-csv`, {
+      console.log('업로드 시도:', {
+        projectId,
+        url: `https://${projectId}.supabase.co/functions/v1/server/upload-csv`,
+        dataCount: csvData.length
+      });
+
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/upload-csv`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -81,28 +87,35 @@ export function SupabaseUpload({ onUploadSuccess }: SupabaseUploadProps) {
         body: JSON.stringify({ csvData })
       });
 
-      const result = await response.json();
-      
-      if (response.ok) {
-        setMessage(`✅ ${csvData.length}개의 대학 데이터가 성공적으로 업로드되었습니다!`);
-        setCsvContent('');
-        onUploadSuccess();
-      } else {
-        setMessage(`❌ 업로드 오류: ${result.error || 'CSV 업로드에 실패했습니다'}`);
+      console.log('응답 상태:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('서버 응답 오류:', errorText);
+        setMessage(`업로드 오류: ${response.status} ${response.statusText}`);
+        setLoading(false);
+        return;
       }
+
+      const result = await response.json();
+      console.log('업로드 성공:', result);
+      
+      setMessage(`✅ ${csvData.length}개의 대학 데이터가 성공적으로 업로드되었습니다!`);
+      setCsvContent('');
+      onUploadSuccess();
     } catch (error) {
-      console.log('CSV 업로드 오류:', error);
-      setMessage('❌ CSV 업로드 중 오류가 발생했습니다');
+      console.error('CSV 업로드 오류:', error);
+      setMessage(`❌ CSV 업로드 중 오류가 발생했습니다: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const sampleCsv = `university,department,admissionType,군,내신등급,수능등급,합격률
-서울대학교,컴퓨터공학부,수시,,1.2,1.5,85
-연세대학교,경영학과,정시,가,1.8,2.1,75
-고려대학교,의과대학,정시,나,1.1,1.3,92
-성균관대학교,법학과,수시,,2.1,2.5,68`;
+  const sampleCsv = `university,department,admissionType,지역,수능점수,내신점수,합격률
+서울대학교,컴퓨터공학부,수시,서울,1.2,1.5,85
+연세대학교,경영학과,정시,서울,1.8,2.1,75
+고려대학교,의과대학,정시,서울,1.1,1.3,92
+성균관대학교,법학과,수시,서울,2.1,2.5,68`;
 
   return (
     <Card className="shadow-lg">
@@ -165,9 +178,9 @@ export function SupabaseUpload({ onUploadSuccess }: SupabaseUploadProps) {
         <div className="bg-gold-50 border border-gold-200 rounded-lg p-4">
           <h4 className="font-medium text-gold-900 mb-2">📋 CSV 형식 가이드</h4>
           <ul className="text-sm text-gold-800 space-y-1">
-            <li>• <strong>필수 컬럼:</strong> university, department, admissionType, 군, 내신등급, 수능등급, 합격률</li>
-            <li>• <strong>수시:</strong> '군' 컬럼은 비워두세요</li>
-            <li>• <strong>정시:</strong> '군' 컬럼에 '가', '나', '다' 중 하나를 입력하세요</li>
+            <li>• <strong>필수 컬럼:</strong> university, department, admissionType, 지역, 수능점수, 내신점수, 합격률</li>
+            <li>• <strong>수시:</strong> '지역' 컬럼에 지역명을 입력하세요</li>
+            <li>• <strong>정시:</strong> '지역' 컬럼에 지역명을 입력하세요</li>
             <li>• <strong>등급:</strong> 1.0~9.0 사이의 숫자로 입력하세요</li>
             <li>• <strong>합격률:</strong> 0~100 사이의 숫자로 입력하세요</li>
           </ul>
