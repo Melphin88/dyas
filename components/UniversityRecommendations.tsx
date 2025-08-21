@@ -87,6 +87,14 @@ export function UniversityRecommendations({
         setDebugInfo(`수시 데이터 로드 실패: ${susiError.message}`);
       } else {
         console.log('✅ 수시 데이터 로드 성공:', susiResult?.length || 0, '개');
+        
+        // 대학별 데이터 분포 확인
+        const universityCount = susiResult?.reduce((acc: any, item) => {
+          acc[item.university] = (acc[item.university] || 0) + 1;
+          return acc;
+        }, {}) || {};
+        
+        console.log('🏫 수시 대학별 데이터 분포:', universityCount);
         console.log('📊 수시 데이터 샘플:', susiResult?.slice(0, 3));
       }
 
@@ -101,6 +109,14 @@ export function UniversityRecommendations({
         setDebugInfo(`정시 데이터 로드 실패: ${jeongsiError.message}`);
       } else {
         console.log('✅ 정시 데이터 로드 성공:', jeongsiResult?.length || 0, '개');
+        
+        // 대학별 데이터 분포 확인
+        const universityCount = jeongsiResult?.reduce((acc: any, item) => {
+          acc[item.university] = (acc[item.university] || 0) + 1;
+          return acc;
+        }, {}) || {};
+        
+        console.log('🏫 정시 대학별 데이터 분포:', universityCount);
         console.log('📊 정시 데이터 샘플:', jeongsiResult?.slice(0, 3));
       }
 
@@ -197,13 +213,17 @@ export function UniversityRecommendations({
     });
 
     // 수시 추천 (지망학과 우선순위 적용)
-    const susiRecommendations = susiData
-      .filter(uni => {
-        const hasGrade = gradeAvg > 0;
-        const hasCutGrade = uni.grade_70_cut > 0 || uni.grade_50_cut > 0;
-        console.log(`수시 필터링: ${uni.university} ${uni.department} - 성적있음:${hasGrade}, 컷등급있음:${hasCutGrade}`);
-        return hasGrade && hasCutGrade;
-      })
+    const susiFiltered = susiData.filter(uni => {
+      const hasGrade = gradeAvg > 0;
+      const hasCutGrade = uni.grade_70_cut > 0 || uni.grade_50_cut > 0;
+      console.log(`수시 필터링: ${uni.university} ${uni.department} - 성적있음:${hasGrade}, 컷등급있음:${hasCutGrade}`);
+      return hasGrade && hasCutGrade;
+    });
+
+    console.log('🔍 수시 필터링 후 대학 수:', susiFiltered.length);
+    console.log('🏫 수시 필터링 후 대학 목록:', susiFiltered.map(u => `${u.university} ${u.department}`).slice(0, 10));
+
+    const susiRecommendations = susiFiltered
       .map(uni => {
         const probability = calculateSusiProbability(uni, gradeAvg);
         const majorRelevance = calculateMajorRelevance(uni.department, desiredMajor);
@@ -236,15 +256,19 @@ export function UniversityRecommendations({
       .slice(0, 20);
 
     console.log('📊 수시 추천 결과:', susiRecommendations.length, '개');
+    console.log('🏆 수시 추천 상위 5개:', susiRecommendations.slice(0, 5).map(u => `${u.university} ${u.department} (관련성:${u.학과관련성}%, 합격률:${u.예상합격률}%)`));
 
     // 정시 추천 (가/나/다군으로 분류, 각각 5개씩)
-    const jeongsiRecommendations = jeongsiData
-      .filter(uni => {
-        const hasSuneung = suneungAvg > 0;
-        const hasCutGrade = uni.grade_70_cut > 0 || uni.grade_50_cut > 0;
-        console.log(`정시 필터링: ${uni.university} ${uni.department} - 수능있음:${hasSuneung}, 컷등급있음:${hasCutGrade}`);
-        return hasSuneung && hasCutGrade;
-      })
+    const jeongsiFiltered = jeongsiData.filter(uni => {
+      const hasSuneung = suneungAvg > 0;
+      const hasCutGrade = uni.grade_70_cut > 0 || uni.grade_50_cut > 0;
+      console.log(`정시 필터링: ${uni.university} ${uni.department} - 수능있음:${hasSuneung}, 컷등급있음:${hasCutGrade}`);
+      return hasSuneung && hasCutGrade;
+    });
+
+    console.log('🔍 정시 필터링 후 대학 수:', jeongsiFiltered.length);
+
+    const jeongsiRecommendations = jeongsiFiltered
       .map(uni => {
         const probability = calculateJeongsiProbability(uni, suneungAvg);
         const majorRelevance = calculateMajorRelevance(uni.department, desiredMajor);
