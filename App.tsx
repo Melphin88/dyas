@@ -8,6 +8,7 @@ import { SuneungInput } from './components/SuneungInput';
 import { UniversityRecommendations } from './components/UniversityRecommendations';
 import { AnalysisReport } from './components/AnalysisReport';
 import { PrintReport } from './components/PrintReport';
+import { DataViewer } from './components/DataViewer';
 import { SimpleGradeData, SimpleSuneungData } from './types/university';
 
 // Supabase 클라이언트 (안전한 생성)
@@ -66,7 +67,7 @@ interface GradeData {
 
 function App() {
   // 기본 상태들
-  const [currentView, setCurrentView] = useState<'login' | 'admin' | 'grade' | 'suneung' | 'recommendations' | 'report' | 'print'>('login');
+  const [currentView, setCurrentView] = useState<'login' | 'admin' | 'grade' | 'suneung' | 'recommendations' | 'report' | 'print' | 'data'>('login');
   const [currentUser, setCurrentUser] = useState<Account | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   
@@ -169,7 +170,7 @@ function App() {
     if (!supabase || isDevelopmentMode()) return;
     
     try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/my-scores`, {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-72188212/my-scores`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -309,7 +310,7 @@ function App() {
           전문교과등급: specialtyGrade ? parseFloat(specialtyGrade.toFixed(2)) : null
         };
 
-        await fetch(`https://${projectId}.supabase.co/functions/v1/server/save-scores`, {
+        await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-72188212/save-scores`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -341,7 +342,7 @@ function App() {
           수능탐구2: data.inquiry2 || null
         };
 
-        await fetch(`https://${projectId}.supabase.co/functions/v1/server/save-scores`, {
+        await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-72188212/save-scores`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -442,7 +443,7 @@ function App() {
                 onClick={handleLogout}
                 className="text-navy-600 hover:text-navy-800 transition-colors"
               >
-                로그아웃
+                로���아웃
               </button>
             </div>
           </div>
@@ -497,6 +498,16 @@ function App() {
               }`}
             >
               인쇄용 보고서
+            </button>
+            <button
+              onClick={() => setCurrentView('data')}
+              className={`pb-2 border-b-2 transition-colors ${
+                currentView === 'data'
+                  ? 'border-gold-500 text-gold-600'
+                  : 'border-transparent text-navy-600 hover:text-navy-800'
+              }`}
+            >
+              데이터 뷰어
             </button>
           </div>
         </div>
@@ -597,6 +608,10 @@ function App() {
               }
             }}
           />
+        )}
+
+        {currentView === 'data' && (
+          <DataViewer />
         )}
       </div>
     </div>
