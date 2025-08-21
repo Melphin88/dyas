@@ -5,12 +5,31 @@ import * as kv from './kv_store.ts'
 
 const app = new Hono()
 
-// CORS 설정
+// Enhanced CORS 설정 - 더 구체적인 설정
 app.use('*', cors({
-  origin: '*',
-  allowHeaders: ['Content-Type', 'Authorization'],
-  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+  origin: [
+    'https://dyas.netlify.app',
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:5173'
+  ],
+  allowHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With',
+    'Accept',
+    'Origin'
+  ],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true,
+  maxAge: 86400
 }))
+
+// OPTIONS 요청 처리 (preflight)
+app.options('*', (c) => {
+  return c.text('', 200)
+})
 
 // 로깅 미들웨어 (수동 구현)
 app.use('*', async (c, next) => {
@@ -623,7 +642,19 @@ app.delete('/server/delete-user-scores/:userId', async (c) => {
 
 // 헬스체크
 app.get('/server/health', (c) => {
-  return c.json({ status: 'ok', timestamp: new Date().toISOString() })
+  return c.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    cors: 'enabled',
+    endpoints: [
+      '/server/health',
+      '/server/csv-files/:type',
+      '/server/upload-csv-file/:type',
+      '/server/csv-data/:type/:fileId',
+      '/server/apply-csv-file/:type/:fileId',
+      '/server/csv-file/:type/:fileId'
+    ]
+  })
 })
 
 Deno.serve(app.fetch)
