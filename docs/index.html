@@ -1,0 +1,1943 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대학 입시 성적 분석 시스템</title>
+    <style>
+        :root {
+            --font-size: 14px;
+            --background: #ffffff;
+            --foreground: #1e293b;
+            --card: #ffffff;
+            --card-foreground: #1e293b;
+            --primary: #0f172a;
+            --primary-foreground: #ffffff;
+            --secondary: #f8fafc;
+            --secondary-foreground: #0f172a;
+            --muted: #f1f5f9;
+            --muted-foreground: #64748b;
+            --accent: #f59e0b;
+            --accent-foreground: #ffffff;
+            --destructive: #dc2626;
+            --destructive-foreground: #ffffff;
+            --border: rgba(30, 41, 59, 0.15);
+            --input: transparent;
+            --input-background: #f8fafc;
+            --font-weight-medium: 500;
+            --font-weight-normal: 400;
+            --ring: #0f172a;
+            --radius: 0.625rem;
+            
+            /* 네이비/골드 커스텀 색상 변수 */
+            --navy-50: #f8fafc;
+            --navy-100: #f1f5f9;
+            --navy-200: #e2e8f0;
+            --navy-300: #cbd5e1;
+            --navy-400: #94a3b8;
+            --navy-500: #64748b;
+            --navy-600: #475569;
+            --navy-700: #334155;
+            --navy-800: #1e293b;
+            --navy-900: #0f172a;
+            
+            --gold-50: #fffbeb;
+            --gold-100: #fef3c7;
+            --gold-200: #fde68a;
+            --gold-300: #fcd34d;
+            --gold-400: #fbbf24;
+            --gold-500: #f59e0b;
+            --gold-600: #d97706;
+            --gold-700: #b45309;
+            --gold-800: #92400e;
+            --gold-900: #78350f;
+            
+            --red-50: #fef2f2;
+            --red-200: #fecaca;
+            --red-700: #b91c1c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: var(--font-size);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background-color: var(--background);
+            color: var(--foreground);
+            font-size: 1rem;
+            font-weight: var(--font-weight-normal);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .min-h-screen {
+            min-height: 100vh;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .justify-center {
+            justify-content: center;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .bg-gradient-to-br {
+            background: linear-gradient(to bottom right, var(--navy-50), var(--navy-100));
+        }
+
+        .bg-navy-50 {
+            background-color: var(--navy-50);
+        }
+
+        .bg-navy-100 {
+            background-color: var(--navy-100);
+        }
+
+        .bg-navy-800 {
+            background-color: var(--navy-800);
+        }
+
+        .bg-navy-900 {
+            background-color: var(--navy-900);
+        }
+
+        .bg-gold-50 {
+            background-color: var(--gold-50);
+        }
+
+        .bg-gold-100 {
+            background-color: var(--gold-100);
+        }
+
+        .bg-gold-600 {
+            background-color: var(--gold-600);
+        }
+
+        .bg-gold-700 {
+            background-color: var(--gold-700);
+        }
+
+        .bg-red-50 {
+            background-color: var(--red-50);
+        }
+
+        .text-navy-600 {
+            color: var(--navy-600);
+        }
+
+        .text-navy-700 {
+            color: var(--navy-700);
+        }
+
+        .text-navy-800 {
+            color: var(--navy-800);
+        }
+
+        .text-navy-900 {
+            color: var(--navy-900);
+        }
+
+        .text-gold-400 {
+            color: var(--gold-400);
+        }
+
+        .text-gold-700 {
+            color: var(--gold-700);
+        }
+
+        .text-red-700 {
+            color: var(--red-700);
+        }
+
+        .text-white {
+            color: white;
+        }
+
+        .border-navy-200 {
+            border-color: var(--navy-200);
+        }
+
+        .border-navy-300 {
+            border-color: var(--navy-300);
+        }
+
+        .border-gold-300 {
+            border-color: var(--gold-300);
+        }
+
+        .border-gold-400 {
+            border-color: var(--gold-400);
+        }
+
+        .border-red-200 {
+            border-color: var(--red-200);
+        }
+
+        .p-4 {
+            padding: 1rem;
+        }
+
+        .p-6 {
+            padding: 1.5rem;
+        }
+
+        .pt-4 {
+            padding-top: 1rem;
+        }
+
+        .pb-4 {
+            padding-bottom: 1rem;
+        }
+
+        .mb-2 {
+            margin-bottom: 0.5rem;
+        }
+
+        .mb-4 {
+            margin-bottom: 1rem;
+        }
+
+        .mb-6 {
+            margin-bottom: 1.5rem;
+        }
+
+        .mt-6 {
+            margin-top: 1.5rem;
+        }
+
+        .mt-8 {
+            margin-top: 2rem;
+        }
+
+        .space-y-1 > * + * {
+            margin-top: 0.25rem;
+        }
+
+        .space-y-2 > * + * {
+            margin-top: 0.5rem;
+        }
+
+        .space-y-4 > * + * {
+            margin-top: 1rem;
+        }
+
+        .space-y-6 > * + * {
+            margin-top: 1.5rem;
+        }
+
+        .w-full {
+            width: 100%;
+        }
+
+        .w-8 {
+            width: 2rem;
+        }
+
+        .w-16 {
+            width: 4rem;
+        }
+
+        .h-8 {
+            height: 2rem;
+        }
+
+        .h-16 {
+            height: 4rem;
+        }
+
+        .max-w-md {
+            max-width: 28rem;
+        }
+
+        .max-w-6xl {
+            max-width: 72rem;
+        }
+
+        .mx-auto {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-3xl {
+            font-size: 1.875rem;
+        }
+
+        .text-2xl {
+            font-size: 1.5rem;
+        }
+
+        .text-lg {
+            font-size: 1.125rem;
+        }
+
+        .text-sm {
+            font-size: 0.875rem;
+        }
+
+        .text-xs {
+            font-size: 0.75rem;
+        }
+
+        .font-medium {
+            font-weight: var(--font-weight-medium);
+        }
+
+        .rounded-full {
+            border-radius: 50%;
+        }
+
+        .rounded-lg {
+            border-radius: 0.5rem;
+        }
+
+        .shadow-xl {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .shadow-lg {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .border-0 {
+            border-width: 0;
+        }
+
+        .border {
+            border-width: 1px;
+        }
+
+        .border-t {
+            border-top-width: 1px;
+        }
+
+        .card {
+            background-color: var(--card);
+            border: 1px solid var(--navy-200);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1.5rem;
+            background-color: var(--navy-50);
+            border-bottom: 1px solid var(--navy-200);
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: var(--font-weight-medium);
+            transition: all 0.15s ease-in-out;
+            cursor: pointer;
+            border: 1px solid transparent;
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            outline: none;
+            min-height: 2.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--navy-800);
+            color: white;
+            border-color: var(--navy-800);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--navy-900);
+            border-color: var(--navy-900);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--gold-700);
+            border-color: var(--gold-300);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--gold-50);
+            border-color: var(--gold-400);
+        }
+
+        .btn-secondary {
+            background-color: var(--navy-100);
+            color: var(--navy-700);
+            border-color: var(--navy-300);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--navy-200);
+        }
+
+        .btn-gold {
+            background-color: var(--gold-600);
+            color: white;
+            border-color: var(--gold-600);
+        }
+
+        .btn-gold:hover {
+            background-color: var(--gold-700);
+            border-color: var(--gold-700);
+        }
+
+        .btn-danger {
+            background-color: var(--destructive);
+            color: var(--destructive-foreground);
+        }
+
+        .btn-danger:hover {
+            background-color: #b91c1c;
+        }
+
+        .input {
+            display: flex;
+            width: 100%;
+            border-radius: 0.375rem;
+            border: 1px solid var(--navy-200);
+            background-color: var(--input-background);
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            transition: all 0.15s ease-in-out;
+            outline: none;
+            min-height: 2.5rem;
+        }
+
+        .input:focus {
+            border-color: var(--gold-500);
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+        }
+
+        .select {
+            display: flex;
+            width: 100%;
+            border-radius: 0.375rem;
+            border: 1px solid var(--navy-200);
+            background-color: white;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            outline: none;
+            cursor: pointer;
+            min-height: 2.5rem;
+        }
+
+        .select:focus {
+            border-color: var(--gold-500);
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+        }
+
+        .label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: var(--font-weight-medium);
+            color: var(--navy-700);
+            margin-bottom: 0.5rem;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 0.375rem;
+            border: 1px solid;
+            margin-bottom: 1rem;
+        }
+
+        .alert-destructive {
+            background-color: var(--red-50);
+            color: var(--red-700);
+            border-color: var(--red-200);
+        }
+
+        .grid {
+            display: grid;
+        }
+
+        .grid-cols-1 {
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+        }
+
+        .grid-cols-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .grid-cols-3 {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .gap-2 {
+            gap: 0.5rem;
+        }
+
+        .gap-3 {
+            gap: 0.75rem;
+        }
+
+        .gap-4 {
+            gap: 1rem;
+        }
+
+        .gap-6 {
+            gap: 1.5rem;
+        }
+
+        .tabs {
+            width: 100%;
+        }
+
+        .tabs-list {
+            display: inline-flex;
+            height: 2.5rem;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.375rem;
+            background-color: var(--muted);
+            padding: 0.25rem;
+            color: var(--muted-foreground);
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+
+        .tabs-trigger {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            border-radius: 0.25rem;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            font-weight: var(--font-weight-medium);
+            transition: all 0.15s ease-in-out;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            flex: 1;
+            color: var(--navy-600);
+        }
+
+        .tabs-trigger.active {
+            background-color: var(--background);
+            color: var(--foreground);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+
+        .tabs-content {
+            margin-top: 0.5rem;
+        }
+
+        .subject-input-card {
+            padding: 1rem;
+            border: 1px solid var(--navy-200);
+            border-radius: 0.5rem;
+            background-color: white;
+        }
+
+        .university-card {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+
+        .university-card.safe {
+            background-color: #166534;
+        }
+
+        .university-card.likely {
+            background-color: #16a34a;
+        }
+
+        .university-card.moderate {
+            background-color: #ca8a04;
+        }
+
+        .university-card.difficult {
+            background-color: #dc2626;
+        }
+
+        /* 테이블 스타일 */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .table th,
+        .table td {
+            border: 1px solid var(--navy-200);
+            padding: 0.5rem;
+            text-align: left;
+        }
+
+        .table th {
+            background-color: var(--navy-100);
+            font-weight: var(--font-weight-medium);
+        }
+
+        /* 모달 스타일 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-header {
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--navy-200);
+        }
+
+        /* 반응형 디자인 */
+        @media (min-width: 768px) {
+            .md\\:grid-cols-2 {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .md\\:grid-cols-3 {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .lg\\:grid-cols-2 {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        /* SVG 스타일 */
+        svg {
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .text-navy-400 {
+            color: var(--navy-400);
+        }
+
+        .max-w-lg {
+            max-width: 32rem;
+        }
+
+        .flex-1 {
+            flex: 1;
+        }
+
+        .overflow-x-auto {
+            overflow-x: auto;
+        }
+
+        .whitespace-nowrap {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 로그인 화면 -->
+        <div id="loginScreen" class="min-h-screen flex items-center justify-center bg-gradient-to-br p-4">
+            <div class="w-full max-w-md space-y-6">
+                <!-- 로고/헤더 영역 -->
+                <div class="text-center">
+                    <div class="mx-auto w-16 h-16 bg-navy-800 rounded-full flex items-center justify-center mb-4" style="background: linear-gradient(to bottom right, var(--navy-800), var(--navy-900));">
+                        <svg class="w-8 h-8 text-gold-400" viewBox="0 0 24 24">
+                            <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                    </div>
+                    <h1 class="text-3xl text-navy-900 mb-2">대학 입시 분석 시스템</h1>
+                    <p class="text-navy-600">로그인하여 맞춤형 대학 분석을 받아보세요</p>
+                </div>
+
+                <!-- 로그인 카드 -->
+                <div class="card shadow-xl border-0">
+                    <div class="card-header space-y-1 pb-4">
+                        <h2 class="text-2xl text-center text-navy-900 font-medium">로그인</h2>
+                        <p class="text-center text-navy-600 text-sm">학생 계정으로 로그인하세요</p>
+                    </div>
+                    <div class="card-content">
+                        <form id="loginForm" class="space-y-4">
+                            <div id="loginError" class="alert alert-destructive hidden">
+                                <div id="loginErrorMessage"></div>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label for="userId" class="label text-navy-700">아이디</label>
+                                <input type="text" id="userId" class="input" placeholder="아이디를 입력하세요" required>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label for="password" class="label text-navy-700">비밀번호</label>
+                                <input type="password" id="password" class="input" placeholder="비밀번호를 입력하세요" required>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-full">로그인</button>
+                        </form>
+                        
+                        <div class="mt-6 pt-4 border-t border-navy-200">
+                            <button id="adminBtn" class="btn btn-outline w-full">관리자 페이지</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 샘플 계정 안내 -->
+                <div class="card bg-navy-50 border-navy-200">
+                    <div class="card-content pt-4">
+                        <h3 class="text-sm text-navy-800 mb-2">샘플 계정</h3>
+                        <div class="space-y-1 text-xs text-navy-600">
+                            <div class="flex justify-between">
+                                <span>student1</span>
+                                <span>pass123</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>student2</span>
+                                <span>mypass</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>test</span>
+                                <span>1234</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 관리자 인증 화면 -->
+        <div id="adminAuthScreen" class="min-h-screen flex items-center justify-center bg-gradient-to-br p-4 hidden">
+            <div class="w-full max-w-md">
+                <div class="card shadow-xl">
+                    <div class="card-header text-center">
+                        <div class="mx-auto w-16 h-16 bg-navy-800 rounded-full flex items-center justify-center mb-4" style="background: linear-gradient(to bottom right, var(--navy-800), var(--navy-900));">
+                            <svg class="w-8 h-8 text-gold-400" viewBox="0 0 24 24">
+                                <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl text-navy-800">관리자 인증</h2>
+                        <p class="text-navy-600 mt-2">관리자 비밀번호를 입력해주세요</p>
+                    </div>
+                    <div class="card-content">
+                        <form id="adminAuthForm" class="space-y-4">
+                            <div id="adminAuthError" class="alert alert-destructive hidden">
+                                <div id="adminAuthErrorMessage"></div>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label for="adminPassword" class="label text-navy-700">관리자 비밀번호</label>
+                                <input type="password" id="adminPassword" class="input" placeholder="관리자 비밀번호를 입력하세요" required>
+                            </div>
+                            
+                            <div class="flex space-x-2">
+                                <button type="submit" class="btn btn-primary flex-1">인증</button>
+                                <button type="button" id="cancelAdminAuth" class="btn btn-secondary flex-1">취소</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 관리자 패널 -->
+        <div id="adminScreen" class="min-h-screen bg-navy-50 p-4 hidden">
+            <div class="max-w-6xl mx-auto">
+                <div class="mb-6">
+                    <button id="backToLoginFromAdmin" class="btn btn-secondary mb-4">← 로그인 페이지로</button>
+                    <h1 class="text-3xl mb-2 text-navy-900">관리자 페이지</h1>
+                    <p class="text-navy-600">학생 계정과 대학 데이터를 관리할 수 있습니다.</p>
+                </div>
+
+                <div class="tabs">
+                    <div class="tabs-list">
+                        <button type="button" class="tabs-trigger active" data-admin-tab="accounts">학생 계정 관리</button>
+                        <button type="button" class="tabs-trigger" data-admin-tab="university-data">대학 데이터 관리</button>
+                    </div>
+
+                    <!-- 학생 계정 관리 탭 -->
+                    <div id="adminAccountsTab" class="tabs-content">
+                        <div class="card shadow-lg">
+                            <div class="card-header">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="text-lg text-navy-800">등록된 계정 목록</h3>
+                                    <button id="addAccountBtn" class="btn btn-gold">
+                                        <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg>
+                                        계정 추가
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <div class="overflow-x-auto">
+                                    <table class="table w-full">
+                                        <thead>
+                                            <tr>
+                                                <th>아이디</th>
+                                                <th>이름</th>
+                                                <th>비밀번호</th>
+                                                <th>성적 조회</th>
+                                                <th>관리</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="accountsTableBody">
+                                            <!-- 계정 목록이 여기에 동적으로 생성됩니다 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 대학 데이터 관리 탭 -->
+                    <div id="adminUniversityTab" class="tabs-content hidden">
+                        <div class="card shadow-lg">
+                            <div class="card-header">
+                                <h3 class="text-lg text-navy-800">대학 데이터 관리</h3>
+                                <p class="text-navy-600">CSV 파일을 업로드하여 대학 데이터를 관리합니다.</p>
+                            </div>
+                            <div class="card-content">
+                                <div class="mb-6">
+                                    <div class="flex gap-4 items-end">
+                                        <div class="flex-1">
+                                            <label class="label">CSV 파일 업로드</label>
+                                            <input type="file" id="csvFileInput" accept=".csv" class="input">
+                                        </div>
+                                        <button id="uploadCsvBtn" class="btn btn-primary">업로드</button>
+                                    </div>
+                                    <div id="uploadStatus" class="mt-2 text-sm hidden"></div>
+                                </div>
+
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div>
+                                        <h4 class="font-medium mb-2 text-navy-800">업로드된 파일 목록</h4>
+                                        <div id="csvFilesList" class="space-y-2">
+                                            <!-- CSV 파일 목록이 여기에 표시됩니다 -->
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium mb-2 text-navy-800">데이터 미리보기</h4>
+                                        <div id="csvPreview" class="border border-navy-200 rounded p-4 bg-gray-50 min-h-32">
+                                            파일을 선택하면 데이터를 미리볼 수 있습니다.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 성적 입력 화면 -->
+        <div id="gradeInputScreen" class="min-h-screen bg-navy-50 p-4 hidden">
+            <div class="max-w-6xl mx-auto">
+                <div class="mb-6">
+                    <button id="backFromGradeBtn" class="btn btn-secondary mb-4">← 이전으로</button>
+                    <h1 class="text-3xl mb-2 text-navy-900">성적 입력</h1>
+                    <p id="studentWelcome" class="text-navy-600"></p>
+                </div>
+
+                <form id="gradeForm">
+                    <!-- 개인정보 섹션 -->
+                    <div class="card shadow-lg border-navy-200 mb-6">
+                        <div class="card-header">
+                            <h3 class="text-lg font-medium text-navy-800">학생 개인정보</h3>
+                            <p class="text-navy-600">입시 상담을 위한 기본 정보를 입력해주세요.</p>
+                        </div>
+                        <div class="card-content space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-2">
+                                    <label class="label text-navy-600">이름</label>
+                                    <input type="text" id="studentName" class="input" placeholder="학생 이름">
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="label text-navy-600">주소 <span class="text-sm text-navy-400">(상담시 학생 구분 목적으로 사용)</span></label>
+                                    <input type="text" id="studentAddress" class="input" placeholder="거주 지역">
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="label text-navy-600">학교 유형</label>
+                                    <select id="schoolType" class="select">
+                                        <option value="">학교 유형을 선택하세요</option>
+                                        <option value="일반고">일반고</option>
+                                        <option value="외고">외고</option>
+                                        <option value="과학고">과학고</option>
+                                        <option value="자사고">자사고</option>
+                                        <option value="국제고">국제고</option>
+                                        <option value="영재학교">영재학교</option>
+                                        <option value="특성화고">특성화고</option>
+                                        <option value="마이스터고">마이스터고</option>
+                                    </select>
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="label text-navy-600">계열</label>
+                                    <select id="trackType" class="select">
+                                        <option value="">계열을 선택하세요</option>
+                                        <option value="문과">문과</option>
+                                        <option value="이과">이과</option>
+                                        <option value="미술">미술</option>
+                                        <option value="체육">체육</option>
+                                        <option value="기타">기타</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 탭 메뉴 -->
+                    <div class="tabs">
+                        <div class="tabs-list">
+                            <button type="button" class="tabs-trigger active" data-tab="school">내신</button>
+                            <button type="button" class="tabs-trigger" data-tab="suneung">모의고사/수능</button>
+                        </div>
+
+                        <!-- 내신 탭 -->
+                        <div id="schoolTab" class="tabs-content">
+                            <div class="tabs">
+                                <div class="tabs-list">
+                                    <button type="button" class="tabs-trigger active" data-grade="1">1학년</button>
+                                    <button type="button" class="tabs-trigger" data-grade="2">2학년</button>
+                                    <button type="button" class="tabs-trigger" data-grade="3">3학년</button>
+                                </div>
+                                
+                                <div id="gradeInputs" class="tabs-content">
+                                    <!-- 학년별 성적 입력이 여기에 동적으로 생성됩니다 -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 수능 탭 -->
+                        <div id="suneungTab" class="tabs-content hidden">
+                            <div class="card shadow-lg border-navy-200">
+                                <div class="card-header">
+                                    <h3 class="text-lg font-medium text-navy-800">수능 성적 입력</h3>
+                                    <p class="text-navy-600">각 과목의 표준점수, 백분위, 등급, 원점수를 입력해주세요.</p>
+                                </div>
+                                <div class="card-content">
+                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="suneungInputs">
+                                        <!-- 수능 과목 입력이 여기에 생성됩니다 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex justify-center">
+                        <button type="submit" class="btn btn-primary w-full max-w-lg">분석 결과 보기</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 분석 결과 화면 -->
+        <div id="analysisScreen" class="min-h-screen bg-navy-50 p-4 hidden">
+            <div class="max-w-6xl mx-auto">
+                <div class="mb-6">
+                    <button id="backFromAnalysisBtn" class="btn btn-secondary mb-4">← 성적 입력으로</button>
+                    <h1 class="text-3xl mb-2 text-navy-900">분석 결과</h1>
+                    <p id="analysisStudentName" class="text-navy-600"></p>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- 수시 추천 -->
+                    <div class="card shadow-lg border-navy-200">
+                        <div class="card-header">
+                            <h3 class="text-lg font-medium text-navy-800">수시 추천 대학</h3>
+                            <p class="text-navy-600">내신 성적을 기반으로 한 수시 모집 추천 대학입니다.</p>
+                        </div>
+                        <div class="card-content">
+                            <div id="susiResults" class="space-y-2">
+                                <!-- 수시 결과가 여기에 동적으로 생성됩니다 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 정시 추천 -->
+                    <div class="card shadow-lg border-navy-200">
+                        <div class="card-header">
+                            <h3 class="text-lg font-medium text-navy-800">정시 추천 대학</h3>
+                            <p class="text-navy-600">수능 성적을 기반으로 한 정시 모집 추천 대학입니다.</p>
+                        </div>
+                        <div class="card-content">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <h4 class="font-medium mb-2 text-navy-800">가군</h4>
+                                    <div id="gaResults" class="space-y-2"></div>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium mb-2 text-navy-800">나군</h4>
+                                    <div id="naResults" class="space-y-2"></div>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium mb-2 text-navy-800">다군</h4>
+                                    <div id="daResults" class="space-y-2"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 모달: 계정 추가 -->
+        <div id="addAccountModal" class="modal-overlay hidden">
+            <div class="modal-content w-full max-w-md">
+                <div class="modal-header">
+                    <h3 class="text-lg font-medium text-navy-800">새 계정 추가</h3>
+                    <p class="text-navy-600">새로운 학생 계정을 추가합니다.</p>
+                </div>
+                <form id="addAccountForm" class="space-y-4">
+                    <div id="addAccountError" class="alert alert-destructive hidden">
+                        <div id="addAccountErrorMessage"></div>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="label">아이디</label>
+                        <input type="text" id="newAccountId" class="input" placeholder="아이디를 입력하세요" required>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="label">이름</label>
+                        <input type="text" id="newAccountName" class="input" placeholder="이름을 입력하세요" required>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="label">비밀번호</label>
+                        <input type="password" id="newAccountPassword" class="input" placeholder="비밀번호를 입력하세요" required>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <button type="submit" class="btn btn-primary flex-1">추가</button>
+                        <button type="button" id="cancelAddAccount" class="btn btn-secondary flex-1">취소</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 앱 상태 관리
+        const AppState = {
+            currentScreen: 'login',
+            currentUser: null,
+            accounts: [
+                { id: 'student1', name: '김학생', password: 'pass123' },
+                { id: 'student2', name: '이학생', password: 'mypass' },
+                { id: 'test', name: '테스트', password: '1234' }
+            ],
+            studentGrades: {},
+            currentGrades: {
+                personal: {},
+                school: {},
+                suneung: {}
+            },
+            csvFiles: [
+                {
+                    id: 'sample-1',
+                    filename: 'university_data_2024.csv',
+                    uploadDate: new Date('2024-01-15T10:30:00'),
+                    data: [],
+                    isActive: true
+                }
+            ],
+            adminAuthenticated: false
+        };
+
+        // 상수
+        const ADMIN_PASSWORD = 'admin123';
+
+        // 로컬 스토리지에서 데이터 로드
+        function loadFromStorage() {
+            try {
+                const savedAccounts = localStorage.getItem('accounts');
+                const savedGrades = localStorage.getItem('studentGrades');
+                const savedCsvFiles = localStorage.getItem('csvFiles');
+                
+                if (savedAccounts) {
+                    AppState.accounts = JSON.parse(savedAccounts);
+                }
+                
+                if (savedGrades) {
+                    AppState.studentGrades = JSON.parse(savedGrades);
+                }
+
+                if (savedCsvFiles) {
+                    AppState.csvFiles = JSON.parse(savedCsvFiles);
+                }
+            } catch (e) {
+                console.error('Failed to load data from storage:', e);
+            }
+        }
+
+        // 로컬 스토리지에 데이터 저장
+        function saveToStorage() {
+            try {
+                localStorage.setItem('accounts', JSON.stringify(AppState.accounts));
+                localStorage.setItem('studentGrades', JSON.stringify(AppState.studentGrades));
+                localStorage.setItem('csvFiles', JSON.stringify(AppState.csvFiles));
+            } catch (e) {
+                console.error('Failed to save data to storage:', e);
+            }
+        }
+
+        // 화면 전환 함수
+        function showScreen(screenName) {
+            const screens = ['loginScreen', 'adminAuthScreen', 'adminScreen', 'gradeInputScreen', 'analysisScreen'];
+            screens.forEach(screen => {
+                document.getElementById(screen).classList.add('hidden');
+            });
+            document.getElementById(screenName).classList.remove('hidden');
+            AppState.currentScreen = screenName;
+        }
+
+        // 에러 메시지 표시/숨기기
+        function showError(elementId, messageId, message) {
+            const errorDiv = document.getElementById(elementId);
+            const errorMessage = document.getElementById(messageId);
+            if (errorDiv && errorMessage) {
+                errorMessage.textContent = message;
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        function hideError(elementId) {
+            const errorDiv = document.getElementById(elementId);
+            if (errorDiv) {
+                errorDiv.classList.add('hidden');
+            }
+        }
+
+        // 로그인 처리
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            hideError('loginError');
+            
+            const userId = document.getElementById('userId').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!userId || !password) {
+                showError('loginError', 'loginErrorMessage', '아이디와 비밀번호를 입력해주세요.');
+                return;
+            }
+            
+            const account = AppState.accounts.find(acc => acc.id === userId && acc.password === password);
+            
+            if (account) {
+                AppState.currentUser = account;
+                document.getElementById('studentWelcome').textContent = `안녕하세요, ${account.name}님! 개인정보와 성적 정보를 입력해주세요.`;
+                document.getElementById('studentName').value = account.name;
+                showScreen('gradeInputScreen');
+                initializeGradeInput();
+                loadExistingGrades();
+            } else {
+                showError('loginError', 'loginErrorMessage', '아이디 또는 비밀번호가 올바르지 않습니다.');
+            }
+        });
+
+        // 관리자 버튼 클릭
+        document.getElementById('adminBtn').addEventListener('click', function() {
+            if (AppState.adminAuthenticated) {
+                showScreen('adminScreen');
+                updateAccountsList();
+                updateCsvFilesList();
+            } else {
+                showScreen('adminAuthScreen');
+            }
+        });
+
+        // 관리자 인증
+        document.getElementById('adminAuthForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            hideError('adminAuthError');
+            
+            const password = document.getElementById('adminPassword').value.trim();
+            
+            if (password === ADMIN_PASSWORD) {
+                AppState.adminAuthenticated = true;
+                document.getElementById('adminPassword').value = '';
+                showScreen('adminScreen');
+                updateAccountsList();
+                updateCsvFilesList();
+            } else {
+                showError('adminAuthError', 'adminAuthErrorMessage', '관리자 비밀번호가 올바르지 않습니다.');
+            }
+        });
+
+        // 관리자 인증 취소
+        document.getElementById('cancelAdminAuth').addEventListener('click', function() {
+            document.getElementById('adminPassword').value = '';
+            hideError('adminAuthError');
+            showScreen('loginScreen');
+        });
+
+        // 뒤로가기 버튼들
+        document.getElementById('backToLoginFromAdmin').addEventListener('click', () => {
+            document.getElementById('userId').value = '';
+            document.getElementById('password').value = '';
+            hideError('loginError');
+            AppState.adminAuthenticated = false;
+            showScreen('loginScreen');
+        });
+
+        document.getElementById('backFromGradeBtn').addEventListener('click', () => {
+            document.getElementById('userId').value = '';
+            document.getElementById('password').value = '';
+            hideError('loginError');
+            showScreen('loginScreen');
+        });
+
+        document.getElementById('backFromAnalysisBtn').addEventListener('click', () => {
+            showScreen('gradeInputScreen');
+        });
+
+        // 관리자 탭 전환
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('tabs-trigger') && e.target.dataset.adminTab) {
+                const tabName = e.target.dataset.adminTab;
+                
+                // 탭 버튼 활성화 상태 변경
+                document.querySelectorAll('.tabs-trigger[data-admin-tab]').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                e.target.classList.add('active');
+                
+                // 탭 콘텐츠 표시/숨김
+                document.getElementById('adminAccountsTab').classList.add('hidden');
+                document.getElementById('adminUniversityTab').classList.add('hidden');
+                
+                if (tabName === 'accounts') {
+                    document.getElementById('adminAccountsTab').classList.remove('hidden');
+                } else if (tabName === 'university-data') {
+                    document.getElementById('adminUniversityTab').classList.remove('hidden');
+                }
+            }
+        });
+
+        // 계정 목록 업데이트
+        function updateAccountsList() {
+            const tbody = document.getElementById('accountsTableBody');
+            tbody.innerHTML = '';
+            
+            AppState.accounts.forEach(account => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="font-medium">${account.id}</td>
+                    <td>${account.name}</td>
+                    <td>
+                        <div class="flex items-center gap-2">
+                            <span class="password-display" data-account="${account.id}">****</span>
+                            <button class="btn-show-password text-xs px-2 py-1 bg-navy-100 text-navy-700 rounded" data-account="${account.id}" data-password="${account.password}">
+                                보기
+                            </button>
+                        </div>
+                    </td>
+                    <td>
+                        <button class="btn text-xs px-2 py-1 bg-gold-600 text-white rounded" onclick="viewStudentGrades('${account.id}')">
+                            성적 조회
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn btn-danger text-xs px-2 py-1" onclick="deleteAccount('${account.id}')">
+                            삭제
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // 비밀번호 보기/숨기기 기능
+            document.querySelectorAll('.btn-show-password').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const accountId = this.dataset.account;
+                    const password = this.dataset.password;
+                    const displaySpan = document.querySelector(`[data-account="${accountId}"].password-display`);
+                    
+                    if (this.textContent === '보기') {
+                        displaySpan.textContent = password;
+                        this.textContent = '숨기기';
+                    } else {
+                        displaySpan.textContent = '****';
+                        this.textContent = '보기';
+                    }
+                });
+            });
+        }
+
+        // 계정 추가 모달
+        document.getElementById('addAccountBtn').addEventListener('click', function() {
+            document.getElementById('addAccountModal').classList.remove('hidden');
+        });
+
+        document.getElementById('cancelAddAccount').addEventListener('click', function() {
+            document.getElementById('addAccountModal').classList.add('hidden');
+            document.getElementById('addAccountForm').reset();
+            hideError('addAccountError');
+        });
+
+        // 계정 추가
+        document.getElementById('addAccountForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            hideError('addAccountError');
+            
+            const newAccount = {
+                id: document.getElementById('newAccountId').value.trim(),
+                name: document.getElementById('newAccountName').value.trim(),
+                password: document.getElementById('newAccountPassword').value.trim()
+            };
+            
+            if (!newAccount.id || !newAccount.name || !newAccount.password) {
+                showError('addAccountError', 'addAccountErrorMessage', '모든 필드를 입력해주세요.');
+                return;
+            }
+            
+            if (AppState.accounts.find(acc => acc.id === newAccount.id)) {
+                showError('addAccountError', 'addAccountErrorMessage', '이미 존재하는 ID입니다.');
+                return;
+            }
+            
+            AppState.accounts.push(newAccount);
+            saveToStorage();
+            updateAccountsList();
+            document.getElementById('addAccountModal').classList.add('hidden');
+            this.reset();
+            alert('계정이 추가되었습니다.');
+        });
+
+        // 계정 삭제
+        function deleteAccount(accountId) {
+            if (confirm('정말 삭제하시겠습니까?')) {
+                AppState.accounts = AppState.accounts.filter(acc => acc.id !== accountId);
+                delete AppState.studentGrades[accountId];
+                saveToStorage();
+                updateAccountsList();
+            }
+        }
+
+        // 학생 성적 조회 (간단한 알림으로 구현)
+        function viewStudentGrades(studentId) {
+            const grades = AppState.studentGrades[studentId];
+            if (grades) {
+                alert(`${studentId}의 성적 데이터가 있습니다.\\n\\n개인정보: ${JSON.stringify(grades.personal, null, 2)}`);
+            } else {
+                alert(`${studentId}의 성적 데이터가 없습니다.`);
+            }
+        }
+
+        // CSV 파일 관리
+        function updateCsvFilesList() {
+            const container = document.getElementById('csvFilesList');
+            container.innerHTML = '';
+            
+            AppState.csvFiles.forEach(file => {
+                const fileDiv = document.createElement('div');
+                fileDiv.className = 'p-3 border border-navy-200 rounded-lg flex justify-between items-center';
+                fileDiv.innerHTML = `
+                    <div>
+                        <div class="font-medium text-navy-800">${file.filename}</div>
+                        <div class="text-xs text-navy-600">${file.uploadDate.toLocaleString()}</div>
+                        <div class="text-xs ${file.isActive ? 'text-green-600' : 'text-navy-500'}">
+                            ${file.isActive ? '활성' : '비활성'} • ${file.data.length}개 데이터
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        ${!file.isActive ? `<button class="btn text-xs px-2 py-1 bg-green-600 text-white rounded" onclick="applyFile('${file.id}')">적용</button>` : ''}
+                        <button class="btn text-xs px-2 py-1 bg-navy-600 text-white rounded" onclick="previewFile('${file.id}')">미리보기</button>
+                        <button class="btn btn-danger text-xs px-2 py-1" onclick="deleteFile('${file.id}')">삭제</button>
+                    </div>
+                `;
+                container.appendChild(fileDiv);
+            });
+        }
+
+        // CSV 파일 업로드
+        document.getElementById('uploadCsvBtn').addEventListener('click', function() {
+            const fileInput = document.getElementById('csvFileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('파일을 선택해주세요.');
+                return;
+            }
+            
+            if (!file.name.endsWith('.csv')) {
+                alert('CSV 파일만 업로드 가능합니다.');
+                return;
+            }
+            
+            const statusDiv = document.getElementById('uploadStatus');
+            statusDiv.textContent = '업로드 중...';
+            statusDiv.className = 'mt-2 text-sm text-navy-600';
+            statusDiv.classList.remove('hidden');
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csvText = e.target.result;
+                    const data = parseCSV(csvText);
+                    
+                    const newFile = {
+                        id: Date.now().toString(),
+                        filename: file.name,
+                        uploadDate: new Date(),
+                        data: data,
+                        isActive: false
+                    };
+                    
+                    AppState.csvFiles.unshift(newFile);
+                    if (AppState.csvFiles.length > 10) {
+                        AppState.csvFiles = AppState.csvFiles.slice(0, 10);
+                    }
+                    
+                    saveToStorage();
+                    updateCsvFilesList();
+                    
+                    statusDiv.textContent = `업로드 완료: ${data.length}개 데이터`;
+                    statusDiv.className = 'mt-2 text-sm text-green-600';
+                    fileInput.value = '';
+                } catch (error) {
+                    statusDiv.textContent = 'CSV 파일 처리 중 오류가 발생했습니다.';
+                    statusDiv.className = 'mt-2 text-sm text-red-600';
+                }
+            };
+            
+            reader.onerror = function() {
+                statusDiv.textContent = '파일 읽기 중 오류가 발생했습니다.';
+                statusDiv.className = 'mt-2 text-sm text-red-600';
+            };
+            
+            reader.readAsText(file);
+        });
+
+        // CSV 파싱 함수
+        function parseCSV(csvText) {
+            const lines = csvText.split('\\n').filter(line => line.trim());
+            const headers = lines[0].split(',').map(h => h.trim());
+            
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+                if (values.length >= headers.length) {
+                    data.push({
+                        university: values[0] || '',
+                        department: values[1] || '',
+                        admissionType: values[2] || '',
+                        reflectionRatio: values[3] || '',
+                        lastYearScore: parseFloat(values[4]) || 0,
+                        lastYearStudents: parseInt(values[5]) || 0,
+                        threeYearAvgScore: parseFloat(values[6]) || 0,
+                        threeYearAvgStudents: parseInt(values[7]) || 0,
+                        year2022Score: parseFloat(values[8]) || 0,
+                        year2022Students: parseInt(values[9]) || 0,
+                        year2021Score: parseFloat(values[10]) || 0,
+                        year2021Students: parseInt(values[11]) || 0,
+                        requiredGrade: parseFloat(values[12]) || 0,
+                        competitionRate: parseFloat(values[13]) || 0
+                    });
+                }
+            }
+            
+            return data;
+        }
+
+        // 파일 적용
+        function applyFile(fileId) {
+            AppState.csvFiles = AppState.csvFiles.map(file => ({
+                ...file,
+                isActive: file.id === fileId
+            }));
+            saveToStorage();
+            updateCsvFilesList();
+            alert('파일이 적용되었습니다.');
+        }
+
+        // 파일 미리보기
+        function previewFile(fileId) {
+            const file = AppState.csvFiles.find(f => f.id === fileId);
+            if (!file) return;
+            
+            const previewDiv = document.getElementById('csvPreview');
+            if (file.data.length === 0) {
+                previewDiv.innerHTML = '데이터가 없습니다.';
+                return;
+            }
+            
+            const previewData = file.data.slice(0, 5);
+            let html = `<div class="text-sm"><strong>${file.filename}</strong> (${file.data.length}개 중 ${previewData.length}개 표시)</div>`;
+            html += '<div class="overflow-x-auto mt-2"><table class="table text-xs">';
+            html += '<thead><tr><th>대학명</th><th>학과명</th><th>전형</th><th>작년점수</th><th>경쟁률</th></tr></thead>';
+            html += '<tbody>';
+            
+            previewData.forEach(row => {
+                html += `<tr>
+                    <td>${row.university}</td>
+                    <td>${row.department}</td>
+                    <td>${row.admissionType}</td>
+                    <td>${row.lastYearScore}등급</td>
+                    <td>${row.competitionRate}:1</td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table></div>';
+            previewDiv.innerHTML = html;
+        }
+
+        // 파일 삭제
+        function deleteFile(fileId) {
+            if (confirm('정말 삭제하시겠습니까?')) {
+                AppState.csvFiles = AppState.csvFiles.filter(f => f.id !== fileId);
+                saveToStorage();
+                updateCsvFilesList();
+                document.getElementById('csvPreview').innerHTML = '파일을 선택하면 데이터를 미리볼 수 있습니다.';
+            }
+        }
+
+        // 탭 기능 (성적 입력)
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('tabs-trigger')) {
+                const parent = e.target.parentElement;
+                parent.querySelectorAll('.tabs-trigger').forEach(tab => tab.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                if (e.target.dataset.tab) {
+                    // 메인 탭 전환
+                    document.querySelectorAll('#gradeInputScreen .tabs-content').forEach(content => {
+                        if (content.id === 'schoolTab' || content.id === 'suneungTab') {
+                            content.classList.add('hidden');
+                        }
+                    });
+                    document.getElementById(e.target.dataset.tab + 'Tab').classList.remove('hidden');
+                } else if (e.target.dataset.grade) {
+                    // 학년 탭 전환
+                    generateGradeInputs(parseInt(e.target.dataset.grade));
+                }
+            }
+        });
+
+        // 성적 입력 초기화
+        function initializeGradeInput() {
+            generateGradeInputs(1);
+            generateSuneungInputs();
+        }
+
+        // 학년별 성적 입력 생성
+        function generateGradeInputs(grade) {
+            const grade1Subjects = ['국어', '영어', '수학', '한국사', '사회', '과학'];
+            const grade23Subjects = ['국어1', '국어2', '국어3', '영어1', '영어2', '영어3', '수학1', '수학2', '수학3', '사회1', '사회2', '사회3', '과학1', '과학2', '과학3'];
+            const vocationalSubjects = ['전공기초', '전공실무', '전공어학', '전공실험', '전공실습', '고급수학', '고급물리', '고급화학', '고급생물', '고급지구과학'];
+            
+            const subjects = grade === 1 ? grade1Subjects : grade23Subjects;
+            
+            const container = document.getElementById('gradeInputs');
+            container.innerHTML = `
+                <div class="space-y-6">
+                    <!-- 일반 교과 -->
+                    <div class="card shadow-lg border-navy-200">
+                        <div class="card-header">
+                            <h3 class="text-lg font-medium text-navy-800">${grade}학년 성적 입력</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="tabs">
+                                <div class="tabs-list">
+                                    <button type="button" class="tabs-trigger active" data-semester="1" data-grade="${grade}">1학기</button>
+                                    <button type="button" class="tabs-trigger" data-semester="2" data-grade="${grade}">2학기</button>
+                                </div>
+                                
+                                <div id="semester1-${grade}" class="tabs-content">
+                                    <div class="mb-4 text-center">
+                                        <h4 class="text-lg font-medium text-navy-800">${grade}학년 1학기</h4>
+                                        <p class="text-sm text-navy-600 mt-1">각 과목의 등급, 이수단위, 원점수를 입력해주세요</p>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        ${subjects.map(subject => createSubjectInput(grade, 1, subject)).join('')}
+                                    </div>
+                                </div>
+                                
+                                <div id="semester2-${grade}" class="tabs-content hidden">
+                                    <div class="mb-4 text-center">
+                                        <h4 class="text-lg font-medium text-navy-800">${grade}학년 2학기</h4>
+                                        <p class="text-sm text-navy-600 mt-1">각 과목의 등급, 이수단위, 원점수를 입력해주세요</p>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        ${subjects.map(subject => createSubjectInput(grade, 2, subject)).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 전문교과 -->
+                    <div class="card shadow-lg border-navy-200">
+                        <div class="card-header bg-gold-50">
+                            <h3 class="text-lg font-medium text-navy-800">전문교과 (전공어, 고급, 실험 등)</h3>
+                            <p class="text-navy-600">전문교과 성적이 있는 경우 입력해주세요.</p>
+                        </div>
+                        <div class="card-content">
+                            <div class="tabs">
+                                <div class="tabs-list">
+                                    <button type="button" class="tabs-trigger active" data-semester="1" data-grade="${grade}" data-vocational="true">1학기</button>
+                                    <button type="button" class="tabs-trigger" data-semester="2" data-grade="${grade}" data-vocational="true">2학기</button>
+                                </div>
+                                
+                                <div id="vocational-semester1-${grade}" class="tabs-content">
+                                    <div class="mb-4 text-center">
+                                        <h4 class="text-lg font-medium text-navy-800">${grade}학년 1학기 전문교과</h4>
+                                        <p class="text-sm text-navy-600 mt-1">전문교과의 등급, 이수단위, 원점수를 입력해주세요</p>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        ${vocationalSubjects.map(subject => createSubjectInput(grade, 1, subject, true)).join('')}
+                                    </div>
+                                </div>
+                                
+                                <div id="vocational-semester2-${grade}" class="tabs-content hidden">
+                                    <div class="mb-4 text-center">
+                                        <h4 class="text-lg font-medium text-navy-800">${grade}학년 2학기 전문교과</h4>
+                                        <p class="text-sm text-navy-600 mt-1">전문교과의 등급, 이수단위, 원점수를 입력해주세요</p>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        ${vocationalSubjects.map(subject => createSubjectInput(grade, 2, subject, true)).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 학기 탭 이벤트 추가
+            addSemesterTabListeners(grade);
+        }
+
+        // 과목 입력 카드 생성
+        function createSubjectInput(grade, semester, subject, isVocational = false) {
+            return `
+                <div class="subject-input-card">
+                    <div class="font-medium text-center text-navy-800 mb-3">${subject}</div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="space-y-2">
+                            <label class="label text-sm text-navy-600">등급</label>
+                            <select class="select" data-grade="${grade}" data-semester="${semester}" data-subject="${subject}" data-field="grade" data-vocational="${isVocational}">
+                                <option value="">등급</option>
+                                ${[1,2,3,4,5,6,7,8,9].map(g => `<option value="${g}">${g}등급</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="label text-sm text-navy-600">이수단위</label>
+                            <input type="number" class="input" min="1" max="8" placeholder="단위" data-grade="${grade}" data-semester="${semester}" data-subject="${subject}" data-field="credits" data-vocational="${isVocational}">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="label text-sm text-navy-600">원점수</label>
+                            <input type="number" class="input" min="0" max="100" placeholder="원점수" data-grade="${grade}" data-semester="${semester}" data-subject="${subject}" data-field="rawScore" data-vocational="${isVocational}">
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 학기 탭 리스너 추가
+        function addSemesterTabListeners(grade) {
+            document.querySelectorAll(`[data-semester][data-grade="${grade}"]`).forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const semester = this.dataset.semester;
+                    const isVocational = this.dataset.vocational === 'true';
+                    const prefix = isVocational ? 'vocational-' : '';
+                    
+                    // 해당 그룹의 탭들 업데이트
+                    const tabGroup = this.parentElement;
+                    tabGroup.querySelectorAll('.tabs-trigger').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 해당 콘텐츠들 업데이트
+                    const contentContainer = tabGroup.parentElement;
+                    contentContainer.querySelectorAll('.tabs-content').forEach(content => content.classList.add('hidden'));
+                    const targetContent = document.getElementById(`${prefix}semester${semester}-${grade}`);
+                    if (targetContent) {
+                        targetContent.classList.remove('hidden');
+                    }
+                });
+            });
+        }
+
+        // 수능 입력 생성
+        function generateSuneungInputs() {
+            const suneungSubjects = [
+                { key: 'korean', name: '국어', hasOptions: true, options: ['화법과 작문', '언어와 매체'] },
+                { key: 'math', name: '수학', hasOptions: true, options: ['확률과 통계', '미적분', '기하'] },
+                { key: 'english', name: '영어', hasOptions: false },
+                { key: 'koreanHistory', name: '한국사', hasOptions: false },
+                { key: 'inquiry1', name: '탐구1', hasOptions: true, options: ['생활과 윤리', '윤리와 사상', '한국지리', '세계지리', '동아시아사', '세계사', '경제', '정치와 법', '사회·문화', '물리학Ⅰ', '물리학Ⅱ', '화학Ⅰ', '화학Ⅱ', '생명과학Ⅰ', '생명과학Ⅱ', '지구과학Ⅰ', '지구과학Ⅱ'] },
+                { key: 'inquiry2', name: '탐구2', hasOptions: true, options: ['생활과 윤리', '윤리와 사상', '한국지리', '세계지리', '동아시아사', '세계사', '경제', '정치와 법', '사회·문화', '물리학Ⅰ', '물리학Ⅱ', '화학Ⅰ', '화학Ⅱ', '생명과학Ⅰ', '생명과학Ⅱ', '지구과학Ⅰ', '지구과학Ⅱ'] },
+                { key: 'secondLanguage', name: '제2외국어/한문', hasOptions: true, options: ['독일어Ⅰ', '프랑스어Ⅰ', '스페인어Ⅰ', '중국어Ⅰ', '일본어Ⅰ', '러시아어Ⅰ', '아랍어Ⅰ', '베트남어Ⅰ', '한문Ⅰ'] }
+            ];
+            
+            const container = document.getElementById('suneungInputs');
+            container.innerHTML = suneungSubjects.map(subject => createSuneungSubjectInput(subject)).join('');
+        }
+
+        // 수능 과목 입력 생성
+        function createSuneungSubjectInput(subject) {
+            const optionsHtml = subject.hasOptions ? `
+                <div class="space-y-2">
+                    <label class="label text-sm text-navy-600">선택과목</label>
+                    <select class="select" data-subject="${subject.key}" data-field="selectedOption">
+                        <option value="">선택과목을 선택하세요</option>
+                        ${subject.options.map(option => `<option value="${option}">${option}</option>`).join('')}
+                    </select>
+                </div>
+            ` : '';
+            
+            const gridCols = subject.name === '영어' || subject.name === '한국사' ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4';
+            const inputFields = subject.name === '영어' || subject.name === '한국사' ? `
+                <div class="space-y-2">
+                    <label class="label text-sm text-navy-600">등급</label>
+                    <select class="select" data-subject="${subject.key}" data-field="grade">
+                        <option value="">등급</option>
+                        ${[1,2,3,4,5,6,7,8,9].map(g => `<option value="${g}">${g}등급</option>`).join('')}
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="label text-sm text-navy-600">원점수</label>
+                    <input type="number" class="input" min="0" max="100" placeholder="원점수" data-subject="${subject.key}" data-field="rawScore">
+                </div>
+            ` : `
+                <div class="space-y-2">
+                    <label class="label text-sm text-navy-600">표준점수</label>
+                    <input type="number" class="input" min="0" max="200" placeholder="표준점수" data-subject="${subject.key}" data-field="standardScore">
+                </div>
+                <div class="space-y-2">
+                    <label class="label text-sm text-navy-600">백분위</label>
+                    <input type="number" class="input" min="0" max="100" placeholder="백분위" data-subject="${subject.key}" data-field="percentile">
+                </div>
+                <div class="space-y-2">
+                    <label class="label text-sm text-navy-600">등급</label>
+                    <select class="select" data-subject="${subject.key}" data-field="grade">
+                        <option value="">등급</option>
+                        ${[1,2,3,4,5,6,7,8,9].map(g => `<option value="${g}">${g}등급</option>`).join('')}
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="label text-sm text-navy-600">원점수</label>
+                    <input type="number" class="input" min="0" max="100" placeholder="원점수" data-subject="${subject.key}" data-field="rawScore">
+                </div>
+            `;
+            
+            return `
+                <div class="card p-4 border-navy-200">
+                    <div class="space-y-4">
+                        <div class="text-center font-medium text-navy-800">${subject.name}</div>
+                        ${optionsHtml}
+                        <div class="grid ${gridCols} gap-3">
+                            ${inputFields}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 기존 성적 로드
+        function loadExistingGrades() {
+            if (AppState.currentUser && AppState.studentGrades[AppState.currentUser.id]) {
+                const grades = AppState.studentGrades[AppState.currentUser.id];
+                
+                // 개인정보 로드
+                if (grades.personal) {
+                    document.getElementById('studentName').value = grades.personal.name || '';
+                    document.getElementById('studentAddress').value = grades.personal.address || '';
+                    document.getElementById('schoolType').value = grades.personal.schoolType || '';
+                    document.getElementById('trackType').value = grades.personal.trackType || '';
+                }
+                
+                // 성적 데이터 로드는 타이머로 지연 실행 (DOM 생성 후)
+                setTimeout(() => {
+                    // 내신 성적 로드
+                    if (grades.school) {
+                        Object.keys(grades.school).forEach(gradeLevel => {
+                            Object.keys(grades.school[gradeLevel]).forEach(semester => {
+                                Object.keys(grades.school[gradeLevel][semester]).forEach(subject => {
+                                    const subjectData = grades.school[gradeLevel][semester][subject];
+                                    Object.keys(subjectData).forEach(field => {
+                                        const element = document.querySelector(`[data-grade="${gradeLevel}"][data-semester="${semester}"][data-subject="${subject}"][data-field="${field}"]`);
+                                        if (element) {
+                                            element.value = subjectData[field];
+                                        }
+                                    });
+                                });
+                            });
+                        });
+                    }
+                    
+                    // 수능 성적 로드
+                    if (grades.suneung) {
+                        Object.keys(grades.suneung).forEach(subject => {
+                            const subjectData = grades.suneung[subject];
+                            Object.keys(subjectData).forEach(field => {
+                                const element = document.querySelector(`[data-subject="${subject}"][data-field="${field}"]`);
+                                if (element) {
+                                    element.value = subjectData[field];
+                                }
+                            });
+                        });
+                    }
+                }, 100);
+            }
+        }
+
+        // 성적 폼 제출
+        document.getElementById('gradeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            collectGradeData();
+            generateAnalysisResults();
+            showScreen('analysisScreen');
+        });
+
+        // 성적 데이터 수집
+        function collectGradeData() {
+            // 개인정보 수집
+            AppState.currentGrades.personal = {
+                name: document.getElementById('studentName').value,
+                address: document.getElementById('studentAddress').value,
+                schoolType: document.getElementById('schoolType').value,
+                trackType: document.getElementById('trackType').value
+            };
+
+            // 내신 성적 수집
+            AppState.currentGrades.school = {};
+            document.querySelectorAll('[data-grade][data-semester][data-subject][data-field]').forEach(input => {
+                const grade = input.dataset.grade;
+                const semester = input.dataset.semester;
+                const subject = input.dataset.subject;
+                const field = input.dataset.field;
+                const value = input.value;
+                
+                if (!AppState.currentGrades.school[grade]) {
+                    AppState.currentGrades.school[grade] = {};
+                }
+                if (!AppState.currentGrades.school[grade][semester]) {
+                    AppState.currentGrades.school[grade][semester] = {};
+                }
+                if (!AppState.currentGrades.school[grade][semester][subject]) {
+                    AppState.currentGrades.school[grade][semester][subject] = {};
+                }
+                AppState.currentGrades.school[grade][semester][subject][field] = value;
+            });
+
+            // 수능 성적 수집
+            AppState.currentGrades.suneung = {};
+            document.querySelectorAll('[data-subject][data-field]:not([data-grade])').forEach(input => {
+                const subject = input.dataset.subject;
+                const field = input.dataset.field;
+                const value = input.value;
+                
+                if (!AppState.currentGrades.suneung[subject]) {
+                    AppState.currentGrades.suneung[subject] = {};
+                }
+                AppState.currentGrades.suneung[subject][field] = value;
+            });
+
+            // 학생별 성적 저장
+            if (AppState.currentUser) {
+                AppState.studentGrades[AppState.currentUser.id] = { ...AppState.currentGrades };
+                saveToStorage();
+            }
+        }
+
+        // 분석 결과 생성
+        function generateAnalysisResults() {
+            document.getElementById('analysisStudentName').textContent = 
+                `${AppState.currentUser.name}님의 대학 입시 분석 결과입니다.`;
+
+            // 모의 대학 데이터
+            const universities = [
+                { name: '서울대학교', major: '경영학과', type: 'safe', rate: '95%', group: 'susi' },
+                { name: '연세대학교', major: '경제학과', type: 'likely', rate: '80%', group: 'susi' },
+                { name: '고려대학교', major: '정치외교학과', type: 'moderate', rate: '65%', group: 'susi' },
+                { name: '서강대학교', major: '경영학과', type: 'likely', rate: '75%', group: 'susi' },
+                { name: '성균관대학교', major: '글로벌경영학과', type: 'safe', rate: '85%', group: 'susi' },
+                
+                { name: '서울대학교', major: '경영학과', type: 'difficult', rate: '45%', group: 'ga' },
+                { name: '연세대학교', major: '경제학과', type: 'moderate', rate: '60%', group: 'ga' },
+                { name: '고려대학교', major: '경영학과', type: 'likely', rate: '75%', group: 'ga' },
+                
+                { name: '한양대학교', major: '경영학과', type: 'safe', rate: '85%', group: 'na' },
+                { name: '중앙대학교', major: '경영학과', type: 'safe', rate: '90%', group: 'na' },
+                { name: '경희대학교', major: '경영학과', type: 'likely', rate: '80%', group: 'na' },
+                
+                { name: '건국대학교', major: '경영학과', type: 'safe', rate: '95%', group: 'da' },
+                { name: '동국대학교', major: '경영학과', type: 'safe', rate: '90%', group: 'da' },
+                { name: '홍익대학교', major: '경영학과', type: 'likely', rate: '85%', group: 'da' }
+            ];
+
+            // 수시 결과
+            const susiContainer = document.getElementById('susiResults');
+            const susiUnivs = universities.filter(u => u.group === 'susi');
+            susiContainer.innerHTML = susiUnivs.map(createUniversityCard).join('');
+
+            // 정시 결과
+            const gaContainer = document.getElementById('gaResults');
+            const naContainer = document.getElementById('naResults');
+            const daContainer = document.getElementById('daResults');
+            
+            gaContainer.innerHTML = universities.filter(u => u.group === 'ga').map(createUniversityCard).join('');
+            naContainer.innerHTML = universities.filter(u => u.group === 'na').map(createUniversityCard).join('');
+            daContainer.innerHTML = universities.filter(u => u.group === 'da').map(createUniversityCard).join('');
+        }
+
+        // 대학 카드 생성
+        function createUniversityCard(university) {
+            return `
+                <div class="university-card ${university.type}">
+                    <div class="font-medium mb-1">${university.name}</div>
+                    <div class="text-sm opacity-90 mb-1">${university.major}</div>
+                    <div class="text-xs opacity-80">합격률: ${university.rate}</div>
+                </div>
+            `;
+        }
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFromStorage();
+            showScreen('loginScreen');
+        });
+    </script>
+</body>
+</html>

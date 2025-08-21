@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대학 입시 성적 분석 시스템</title>
+    <style>
+        :root {
+            --font-size: 14px;
+            --background: #ffffff;
+            --foreground: #1e293b;
+            --card: #ffffff;
+            --card-foreground: #1e293b;
+            --primary: #0f172a;
+            --primary-foreground: #ffffff;
+            --secondary: #f8fafc;
+            --secondary-foreground: #0f172a;
+            --muted: #f1f5f9;
+            --muted-foreground: #64748b;
+            --accent: #f59e0b;
+            --accent-foreground: #ffffff;
+            --destructive: #dc2626;
+            --destructive-foreground: #ffffff;
+            --border: rgba(30, 41, 59, 0.15);
+            --input: transparent;
+            --input-background: #f8fafc;
+            --font-weight-medium: 500;
+            --font-weight-normal: 400;
+            --ring: #0f172a;
+            --radius: 0.625rem;
+            
+            /* 네이비/골드 커스텀 색상 변수 */
+            --navy-50: #f8fafc;
+            --navy-100: #f1f5f9;
+            --navy-200: #e2e8f0;
+            --navy-300: #cbd5e1;
+            --navy-400: #94a3b8;
+            --navy-500: #64748b;
+            --navy-600: #475569;
+            --navy-700: #334155;
+            --navy-800: #1e293b;
+            --navy-900: #0f172a;
+            
+            --gold-50: #fffbeb;
+            --gold-100: #fef3c7;
+            --gold-200: #fde68a;
+            --gold-300: #fcd34d;
+            --gold-400: #fbbf24;
+            --gold-500: #f59e0b;
+            --gold-600: #d97706;
+            --gold-700: #b45309;
+            --gold-800: #92400e;
+            --gold-900: #78350f;
+            
+            --red-50: #fef2f2;
+            --red-200: #fecaca;
+            --red-700: #b91c1c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: var(--font-size);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background-color: var(--background);
+            color: var(--foreground);
+            font-size: 1rem;
+            font-weight: var(--font-weight-normal);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .min-h-screen {
+            min-height: 100vh;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .justify-center {
+            justify-content: center;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .bg-gradient-to-br {
+            background: linear-gradient(to bottom right, var(--navy-50), var(--navy-100));
+        }
+
+        .bg-navy-50 {
+            background-color: var(--navy-50);
+        }
+
+        .bg-navy-800 {
+            background-color: var(--navy-800);
+        }
+
+        .bg-navy-900 {
+            background-color: var(--navy-900);
+        }
+
+        .bg-gold-50 {
+            background-color: var(--gold-50);
+        }
+
+        .bg-red-50 {
+            background-color: var(--red-50);
+        }
+
+        .text-navy-600 {
+            color: var(--navy-600);
+        }
+
+        .text-navy-700 {
+            color: var(--navy-700);
+        }
+
+        .text-navy-800 {
+            color: var(--navy-800);
+        }
+
+        .text-navy-900 {
+            color: var(--navy-900);
+        }
+
+        .text-gold-400 {
+            color: var(--gold-400);
+        }
+
+        .text-gold-700 {
+            color: var(--gold-700);
+        }
+
+        .text-red-700 {
+            color: var(--red-700);
+        }
+
+        .text-white {
+            color: white;
+        }
+
+        .border-navy-200 {
+            border-color: var(--navy-200);
+        }
+
+        .border-gold-300 {
+            border-color: var(--gold-300);
+        }
+
+        .border-gold-400 {
+            border-color: var(--gold-400);
+        }
+
+        .border-red-200 {
+            border-color: var(--red-200);
+        }
+
+        .p-4 {
+            padding: 1rem;
+        }
+
+        .pt-4 {
+            padding-top: 1rem;
+        }
+
+        .pb-4 {
+            padding-bottom: 1rem;
+        }
+
+        .mb-2 {
+            margin-bottom: 0.5rem;
+        }
+
+        .mb-4 {
+            margin-bottom: 1rem;
+        }
+
+        .mb-6 {
+            margin-bottom: 1.5rem;
+        }
+
+        .mt-6 {
+            margin-top: 1.5rem;
+        }
+
+        .space-y-1 > * + * {
+            margin-top: 0.25rem;
+        }
+
+        .space-y-2 > * + * {
+            margin-top: 0.5rem;
+        }
+
+        .space-y-4 > * + * {
+            margin-top: 1rem;
+        }
+
+        .space-y-6 > * + * {
+            margin-top: 1.5rem;
+        }
+
+        .w-full {
+            width: 100%;
+        }
+
+        .w-8 {
+            width: 2rem;
+        }
+
+        .w-16 {
+            width: 4rem;
+        }
+
+        .h-8 {
+            height: 2rem;
+        }
+
+        .h-16 {
+            height: 4rem;
+        }
+
+        .max-w-md {
+            max-width: 28rem;
+        }
+
+        .mx-auto {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-3xl {
+            font-size: 1.875rem;
+        }
+
+        .text-2xl {
+            font-size: 1.5rem;
+        }
+
+        .text-sm {
+            font-size: 0.875rem;
+        }
+
+        .text-xs {
+            font-size: 0.75rem;
+        }
+
+        .font-medium {
+            font-weight: var(--font-weight-medium);
+        }
+
+        .rounded-full {
+            border-radius: 50%;
+        }
+
+        .shadow-xl {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .border-0 {
+            border-width: 0;
+        }
+
+        .border-t {
+            border-top-width: 1px;
+        }
+
+        .card {
+            background-color: var(--card);
+            border: 1px solid var(--navy-200);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1.5rem;
+            background-color: var(--navy-50);
+            border-bottom: 1px solid var(--navy-200);
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: var(--font-weight-medium);
+            transition: all 0.15s ease-in-out;
+            cursor: pointer;
+            border: 1px solid transparent;
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            outline: none;
+            min-height: 2.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--navy-800);
+            color: white;
+            border-color: var(--navy-800);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--navy-900);
+            border-color: var(--navy-900);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--gold-700);
+            border-color: var(--gold-300);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--gold-50);
+            border-color: var(--gold-400);
+        }
+
+        .input {
+            display: flex;
+            width: 100%;
+            border-radius: 0.375rem;
+            border: 1px solid var(--navy-200);
+            background-color: var(--input-background);
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            transition: all 0.15s ease-in-out;
+            outline: none;
+            min-height: 2.5rem;
+        }
+
+        .input:focus {
+            border-color: var(--gold-500);
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+        }
+
+        .label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: var(--font-weight-medium);
+            color: var(--navy-700);
+            margin-bottom: 0.5rem;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 0.375rem;
+            border: 1px solid;
+            margin-bottom: 1rem;
+        }
+
+        .alert-destructive {
+            background-color: var(--red-50);
+            color: var(--red-700);
+            border-color: var(--red-200);
+        }
+
+        svg {
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 로그인 화면 -->
+        <div id="loginScreen" class="min-h-screen flex items-center justify-center bg-gradient-to-br p-4">
+            <div class="w-full max-w-md space-y-6">
+                <!-- 로고/헤더 영역 -->
+                <div class="text-center">
+                    <div class="mx-auto w-16 h-16 bg-navy-800 rounded-full flex items-center justify-center mb-4" style="background: linear-gradient(to bottom right, var(--navy-800), var(--navy-900));">
+                        <svg class="w-8 h-8 text-gold-400" viewBox="0 0 24 24">
+                            <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                    </div>
+                    <h1 class="text-3xl text-navy-900 mb-2">대학 입시 분석 시스템</h1>
+                    <p class="text-navy-600">로그인하여 맞춤형 대학 분석을 받아보세요</p>
+                </div>
+
+                <!-- 로그인 카드 -->
+                <div class="card shadow-xl border-0">
+                    <div class="card-header space-y-1 pb-4">
+                        <h2 class="text-2xl text-center text-navy-900 font-medium">로그인</h2>
+                        <p class="text-center text-navy-600 text-sm">학생 계정으로 로그인하세요</p>
+                    </div>
+                    <div class="card-content">
+                        <form id="loginForm" class="space-y-4">
+                            <div id="loginError" class="alert alert-destructive hidden">
+                                <div id="loginErrorMessage"></div>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label for="userId" class="label text-navy-700">아이디</label>
+                                <input type="text" id="userId" class="input" placeholder="아이디를 입력하세요" required>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label for="password" class="label text-navy-700">비밀번호</label>
+                                <input type="password" id="password" class="input" placeholder="비밀번호를 입력하세요" required>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-full">로그인</button>
+                        </form>
+                        
+                        <div class="mt-6 pt-4 border-t border-navy-200">
+                            <button id="adminBtn" class="btn btn-outline w-full">관리자 페이지</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 샘플 계정 안내 -->
+                <div class="card bg-navy-50 border-navy-200">
+                    <div class="card-content pt-4">
+                        <h3 class="text-sm text-navy-800 mb-2">샘플 계정</h3>
+                        <div class="space-y-1 text-xs text-navy-600">
+                            <div class="flex justify-between">
+                                <span>student1</span>
+                                <span>pass123</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>student2</span>
+                                <span>mypass</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>test</span>
+                                <span>1234</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 간단한 메시지 화면 -->
+        <div id="successScreen" class="min-h-screen bg-navy-50 p-4 hidden">
+            <div class="max-w-md mx-auto mt-20">
+                <div class="card shadow-xl">
+                    <div class="card-content text-center">
+                        <h2 class="text-2xl text-navy-900 mb-4">로그인 성공!</h2>
+                        <p class="text-navy-600 mb-6">대학 입시 분석 시스템에 오신 것을 환영합니다.</p>
+                        <button id="backBtn" class="btn btn-primary">다시 로그인</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 앱 상태 관리
+        const AppState = {
+            accounts: [
+                { id: 'student1', name: '김학생', password: 'pass123' },
+                { id: 'student2', name: '이학생', password: 'mypass' },
+                { id: 'test', name: '테스트', password: '1234' }
+            ]
+        };
+
+        // 화면 전환 함수
+        function showScreen(screenName) {
+            const screens = ['loginScreen', 'successScreen'];
+            screens.forEach(screen => {
+                document.getElementById(screen).classList.add('hidden');
+            });
+            document.getElementById(screenName).classList.remove('hidden');
+        }
+
+        // 에러 메시지 표시
+        function showError(message) {
+            const errorDiv = document.getElementById('loginError');
+            const errorMessage = document.getElementById('loginErrorMessage');
+            errorMessage.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+
+        // 에러 메시지 숨기기
+        function hideError() {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.classList.add('hidden');
+        }
+
+        // 로그인 처리
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            hideError();
+            
+            const userId = document.getElementById('userId').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!userId || !password) {
+                showError('아이디와 비밀번호를 입력해주세요.');
+                return;
+            }
+            
+            const account = AppState.accounts.find(acc => acc.id === userId && acc.password === password);
+            
+            if (account) {
+                alert(`${account.name}님, 로그인 성공!`);
+                showScreen('successScreen');
+            } else {
+                showError('아이디 또는 비밀번호가 올바르지 않습니다.');
+            }
+        });
+
+        // 관리자 버튼
+        document.getElementById('adminBtn').addEventListener('click', function() {
+            alert('관리자 페이지 접근');
+        });
+
+        // 다시 로그인 버튼
+        document.getElementById('backBtn').addEventListener('click', function() {
+            document.getElementById('userId').value = '';
+            document.getElementById('password').value = '';
+            hideError();
+            showScreen('loginScreen');
+        });
+    </script>
+</body>
+</html>
