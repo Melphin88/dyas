@@ -74,7 +74,7 @@ export function UniversityRecommendations({
     setDebugInfo('데이터 로드 중...');
 
     try {
-      console.log('📊 Supabase 클라이언트 사용');
+      console.log('📊 Supabase 클라이언트 사용 시작');
 
       // 수시 데이터 로드
       console.log('📈 수시 데이터 로드 중...');
@@ -84,8 +84,10 @@ export function UniversityRecommendations({
 
       if (susiError) {
         console.error('❌ 수시 데이터 로드 오류:', susiError);
+        setDebugInfo(`수시 데이터 로드 실패: ${susiError.message}`);
       } else {
         console.log('✅ 수시 데이터 로드 성공:', susiResult?.length || 0, '개');
+        console.log('📊 수시 데이터 샘플:', susiResult?.slice(0, 3));
       }
 
       // 정시 데이터 로드
@@ -96,8 +98,10 @@ export function UniversityRecommendations({
 
       if (jeongsiError) {
         console.error('❌ 정시 데이터 로드 오류:', jeongsiError);
+        setDebugInfo(`정시 데이터 로드 실패: ${jeongsiError.message}`);
       } else {
         console.log('✅ 정시 데이터 로드 성공:', jeongsiResult?.length || 0, '개');
+        console.log('📊 정시 데이터 샘플:', jeongsiResult?.slice(0, 3));
       }
 
       setSusiData(susiResult || []);
