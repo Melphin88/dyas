@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Printer, Search } from 'lucide-react';
-import { projectId, publicAnonKey, isDevelopmentMode } from '../utils/supabase/info';
+import { supabase } from '../utils/supabase/client';
 import { SusiUniversityCard } from './SusiUniversityCard';
 import { JeongsiUniversityCard } from './JeongsiUniversityCard';
 import {
@@ -74,15 +74,7 @@ export function UniversityRecommendations({
     setDebugInfo('데이터 로드 중...');
 
     try {
-      // Supabase 클라이언트 동적 import
-      const { createClient } = await import('@supabase/supabase-js');
-      
-      const supabase = createClient(
-        `https://${projectId}.supabase.co`,
-        publicAnonKey
-      );
-
-      console.log('📊 Supabase 클라이언트 생성 완료');
+      console.log('📊 Supabase 클라이언트 사용');
 
       // 수시 데이터 로드
       console.log('📈 수시 데이터 로드 중...');
