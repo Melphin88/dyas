@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Printer } from 'lucide-react';
+import { Printer, Search } from 'lucide-react';
 import { projectId, publicAnonKey, isDevelopmentMode } from '../utils/supabase/info';
 import { SusiUniversityCard } from './SusiUniversityCard';
 import { JeongsiUniversityCard } from './JeongsiUniversityCard';
@@ -53,6 +53,8 @@ export function UniversityRecommendations({
   const [jeongsiData, setJeongsiData] = useState<JeongsiUniversityData[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string>('');
+  const [desiredMajor, setDesiredMajor] = useState<string>('');
+  const [showMajorInput, setShowMajorInput] = useState(true);
 
   useEffect(() => {
     console.log('🔍 UniversityRecommendations 초기화');
@@ -63,7 +65,7 @@ export function UniversityRecommendations({
     if (dataLoaded && (susiData.length > 0 || jeongsiData.length > 0)) {
       generateRecommendations();
     }
-  }, [gradeData, suneungData, susiData, jeongsiData, dataLoaded]);
+  }, [gradeData, suneungData, susiData, jeongsiData, dataLoaded, desiredMajor]);
 
   // 실제 Supabase 데이터 로드
   const loadRealData = async () => {
@@ -86,8 +88,7 @@ export function UniversityRecommendations({
       console.log('📈 수시 데이터 로드 중...');
       const { data: susiResult, error: susiError } = await supabase
         .from('susi_university_data')
-        .select('*')
-        .limit(1000);
+        .select('*');
 
       if (susiError) {
         console.error('❌ 수시 데이터 로드 오류:', susiError);
@@ -99,8 +100,7 @@ export function UniversityRecommendations({
       console.log('📈 정시 데이터 로드 중...');
       const { data: jeongsiResult, error: jeongsiError } = await supabase
         .from('jeongsi_university_data')
-        .select('*')
-        .limit(1000);
+        .select('*');
 
       if (jeongsiError) {
         console.error('❌ 정시 데이터 로드 오류:', jeongsiError);
@@ -132,13 +132,56 @@ export function UniversityRecommendations({
     }
   };
 
+  // 학과 관련성 점수 계산
+  const calculateMajorRelevance = (department: string, desiredMajor: string): number => {
+    if (!desiredMajor.trim()) return 0;
+    
+    const major = desiredMajor.toLowerCase();
+    const dept = department.toLowerCase();
+    
+    // 정확한 일치
+    if (dept.includes(major) || major.includes(dept)) return 100;
+    
+    // 주요 키워드 매칭
+    const keywords = major.split(/[\s,]+/).filter(k => k.length > 1);
+    let score = 0;
+    
+    keywords.forEach(keyword => {
+      if (dept.includes(keyword)) {
+        score += 30;
+      }
+    });
+    
+    // 학과 분야별 가중치
+    const fieldWeights: { [key: string]: number } = {
+      '공학': ['공학', '기계', '전자', '컴퓨터', '정보', '건설', '화학', '생명'],
+      '의학': ['의학', '치의학', '한의학', '약학', '간호', '보건'],
+      '경영': ['경영', '경제', '무역', '회계', '마케팅', '경영학'],
+      '문학': ['문학', '국어', '영어', '독어', '불어', '중어', '일어'],
+      '사학': ['사학', '역사', '고고학', '문화재'],
+      '교육': ['교육', '초등', '중등', '특수교육'],
+      '예술': ['예술', '미술', '음악', '디자인', '연극', '영화'],
+      '자연': ['자연', '수학', '물리', '화학', '생물', '지구'],
+      '사회': ['사회', '정치', '행정', '법학', '사회학', '심리학']
+    };
+    
+    Object.entries(fieldWeights).forEach(([field, terms]) => {
+      if (terms.some(term => major.includes(term) || dept.includes(term))) {
+        score += 20;
+      }
+    });
+    
+    return Math.min(100, score);
+  };
+
   const generateRecommendations = () => {
     console.log('🔄 추천 대학 생성 시작...');
     console.log('📊 현재 데이터 상태:', {
       수시데이터: susiData.length,
       정시데이터: jeongsiData.length,
       내신성적: gradeData ? '있음' : '없음',
-      수능성적: suneungData ? '있음' : '없음'
+      수능성적: suneungData ? '있음' : '없음',
+      지망학과: desiredMajor
     });
     
     if (susiData.length === 0 && jeongsiData.length === 0) {
@@ -157,7 +200,7 @@ export function UniversityRecommendations({
       수능데이터: suneungData
     });
 
-    // 수시 추천 (20개)
+    // 수시 추천 (지망학과 우선순위 적용)
     const susiRecommendations = susiData
       .filter(uni => {
         const hasGrade = gradeAvg > 0;
@@ -167,19 +210,31 @@ export function UniversityRecommendations({
       })
       .map(uni => {
         const probability = calculateSusiProbability(uni, gradeAvg);
-        console.log(`수시 계산: ${uni.university} ${uni.department} - 합격률:${probability}%`);
+        const majorRelevance = calculateMajorRelevance(uni.department, desiredMajor);
+        console.log(`수시 계산: ${uni.university} ${uni.department} - 합격률:${probability}%, 학과관련성:${majorRelevance}%`);
         return {
           ...uni,
           예상합격률: Math.round(probability),
           합격가능성등급: getSuccessGrade(probability),
+          학과관련성: majorRelevance,
           과거데이터: groupPastData(susiData, uni.university, uni.department)
-        } as RecommendedSusiUniversity;
+        } as RecommendedSusiUniversity & { 학과관련성: number };
       })
       .sort((a, b) => {
+        // 1순위: 학과 관련성 (지망학과가 있는 경우)
+        if (desiredMajor.trim()) {
+          if (a.학과관련성 !== b.학과관련성) {
+            return b.학과관련성 - a.학과관련성;
+          }
+        }
+        
+        // 2순위: 합격 가능성 등급
         const gradeOrder = { 'S': 4, 'A': 3, 'B': 2, 'C': 1 };
         if (gradeOrder[a.합격가능성등급] !== gradeOrder[b.합격가능성등급]) {
           return gradeOrder[b.합격가능성등급] - gradeOrder[a.합격가능성등급];
         }
+        
+        // 3순위: 합격률
         return b.예상합격률 - a.예상합격률;
       })
       .slice(0, 20);
@@ -196,36 +251,48 @@ export function UniversityRecommendations({
       })
       .map(uni => {
         const probability = calculateJeongsiProbability(uni, suneungAvg);
-        console.log(`정시 계산: ${uni.university} ${uni.department} - 합격률:${probability}%`);
+        const majorRelevance = calculateMajorRelevance(uni.department, desiredMajor);
+        console.log(`정시 계산: ${uni.university} ${uni.department} - 합격률:${probability}%, 학과관련성:${majorRelevance}%`);
         return {
           ...uni,
           예상합격률: Math.round(probability),
           합격가능성등급: getSuccessGrade(probability),
+          학과관련성: majorRelevance,
           과거데이터: groupPastData(jeongsiData, uni.university, uni.department)
-        } as RecommendedJeongsiUniversity;
+        } as RecommendedJeongsiUniversity & { 학과관련성: number };
       });
 
-    const sortByGradeAndProbability = (a: RecommendedJeongsiUniversity, b: RecommendedJeongsiUniversity) => {
+    const sortByRelevanceAndGrade = (a: RecommendedJeongsiUniversity & { 학과관련성: number }, b: RecommendedJeongsiUniversity & { 학과관련성: number }) => {
+      // 1순위: 학과 관련성 (지망학과가 있는 경우)
+      if (desiredMajor.trim()) {
+        if (a.학과관련성 !== b.학과관련성) {
+          return b.학과관련성 - a.학과관련성;
+        }
+      }
+      
+      // 2순위: 합격 가능성 등급
       const gradeOrder = { 'S': 4, 'A': 3, 'B': 2, 'C': 1 };
       if (gradeOrder[a.합격가능성등급] !== gradeOrder[b.합격가능성등급]) {
         return gradeOrder[b.합격가능성등급] - gradeOrder[a.합격가능성등급];
       }
+      
+      // 3순위: 합격률
       return b.예상합격률 - a.예상합격률;
     };
 
     const jeongsiGa = jeongsiRecommendations
       .filter(uni => uni.admission_type.includes('가') || uni.admission_type.includes('정시(가)'))
-      .sort(sortByGradeAndProbability)
+      .sort(sortByRelevanceAndGrade)
       .slice(0, 5);
 
     const jeongsiNa = jeongsiRecommendations
       .filter(uni => uni.admission_type.includes('나') || uni.admission_type.includes('정시(나)'))
-      .sort(sortByGradeAndProbability)
+      .sort(sortByRelevanceAndGrade)
       .slice(0, 5);
 
     const jeongsiDa = jeongsiRecommendations
       .filter(uni => uni.admission_type.includes('다') || uni.admission_type.includes('정시(다)'))
-      .sort(sortByGradeAndProbability)
+      .sort(sortByRelevanceAndGrade)
       .slice(0, 5);
 
     setRecommendations({
@@ -236,14 +303,15 @@ export function UniversityRecommendations({
     });
 
     const totalRecommendations = susiRecommendations.length + jeongsiGa.length + jeongsiNa.length + jeongsiDa.length;
-    setDebugInfo(`추천 완료: 수시 ${susiRecommendations.length}개, 정시 ${jeongsiGa.length + jeongsiNa.length + jeongsiDa.length}개 (총 ${totalRecommendations}개)`);
+    setDebugInfo(`추천 완료: 수시 ${susiRecommendations.length}개, 정시 ${jeongsiGa.length + jeongsiNa.length + jeongsiDa.length}개 (총 ${totalRecommendations}개)${desiredMajor ? ` | 지망학과: ${desiredMajor}` : ''}`);
 
     console.log('✅ 추천 완료:', {
       수시: susiRecommendations.length,
       정시가군: jeongsiGa.length,
       정시나군: jeongsiNa.length,
       정시다군: jeongsiDa.length,
-      총합: totalRecommendations
+      총합: totalRecommendations,
+      지망학과: desiredMajor
     });
   };
 
@@ -333,6 +401,54 @@ export function UniversityRecommendations({
             )}
           </div>
         </div>
+
+        {/* 지망학과 입력 */}
+        {showMajorInput && (
+          <div className="mb-6 bg-white shadow rounded-lg p-6">
+            <h3 className="text-lg font-medium text-navy-900 mb-4 flex items-center">
+              <Search className="w-5 h-5 mr-2 text-gold-600" />
+              지망학과 입력 (선택사항)
+            </h3>
+            <div className="flex space-x-4">
+              <input
+                type="text"
+                placeholder="예: 컴퓨터공학, 의학, 경영학..."
+                value={desiredMajor}
+                onChange={(e) => setDesiredMajor(e.target.value)}
+                className="flex-1 p-3 border border-navy-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gold-500"
+              />
+              <Button 
+                onClick={() => setShowMajorInput(false)}
+                className="px-6 py-3 bg-gold-600 text-white hover:bg-gold-700"
+              >
+                추천 받기
+              </Button>
+            </div>
+            <p className="text-sm text-navy-500 mt-2">
+              지망학과를 입력하면 관련 학과를 우선적으로 추천해드립니다.
+            </p>
+          </div>
+        )}
+
+        {/* 지망학과 표시 및 수정 */}
+        {!showMajorInput && desiredMajor && (
+          <div className="mb-6 bg-gold-50 border border-gold-200 rounded-lg p-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="text-sm text-gold-800 font-medium">지망학과:</span>
+                <span className="ml-2 text-gold-900">{desiredMajor}</span>
+              </div>
+              <Button 
+                onClick={() => setShowMajorInput(true)}
+                variant="outline"
+                size="sm"
+                className="text-gold-700 border-gold-300 hover:bg-gold-100"
+              >
+                수정
+              </Button>
+            </div>
+          </div>
+        )}
         
         <div className="space-y-8">
           {/* 수시 추천 */}
@@ -385,23 +501,36 @@ export function UniversityRecommendations({
 
           {/* 안내 정보 */}
           <div className="bg-gold-50 border border-gold-200 rounded-lg p-6">
-            <h4 className="font-medium text-gold-900 mb-4">합격 가능성 등급 안내</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-emerald-700 rounded"></div>
-                <span className="text-navy-700">S등급: 안전권 (80%+)</span>
+            <h4 className="font-medium text-gold-900 mb-4">추천 시스템 안내</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
+              <div>
+                <h5 className="font-medium text-gold-800 mb-2">추천 우선순위:</h5>
+                <ol className="list-decimal list-inside space-y-1 text-gold-700">
+                  <li>지망학과 관련성 (입력한 경우)</li>
+                  <li>합격 가능성 등급 (S > A > B > C)</li>
+                  <li>예상 합격률</li>
+                </ol>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-green-500 rounded"></div>
-                <span className="text-navy-700">A등급: 적정권 (50-79%)</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-                <span className="text-navy-700">B등급: 소신권 (20-49%)</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-red-500 rounded"></div>
-                <span className="text-navy-700">C등급: 도전권 (20% 미만)</span>
+              <div>
+                <h5 className="font-medium text-gold-800 mb-2">합격 가능성 등급:</h5>
+                <div className="space-y-1 text-gold-700">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-emerald-700 rounded"></div>
+                    <span>S등급: 안전권 (80%+)</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-green-500 rounded"></div>
+                    <span>A등급: 적정권 (50-79%)</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                    <span>B등급: 소신권 (20-49%)</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-red-500 rounded"></div>
+                    <span>C등급: 도전권 (20% 미만)</span>
+                  </div>
+                </div>
               </div>
             </div>
             <div className="text-gold-800 text-sm space-y-2">
