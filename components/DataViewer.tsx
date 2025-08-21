@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../utils/supabase/client';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Search, Database, GraduationCap } from 'lucide-react';
+import { Search, Database, GraduationCap, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription } from './ui/alert';
 
 interface UniversityData {
   id: string;
@@ -28,15 +28,33 @@ interface UniversityData {
 export function DataViewer() {
   const [data, setData] = useState<UniversityData[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<'susi' | 'jeongsi'>('susi');
-  const [selectedRegion, setSelectedRegion] = useState('');
-  const [selectedYear, setSelectedYear] = useState('');
+  const [selectedRegion, setSelectedRegion] = useState<string>('all');
+  const [selectedYear, setSelectedYear] = useState<string>('all');
 
   // 데이터 로드 함수
   const loadData = async () => {
     setLoading(true);
+    setError(null);
+    
     try {
+      // Supabase 클라이언트 동적 import
+      const { createClient } = await import('@supabase/supabase-js');
+      
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!projectId || !anonKey) {
+        throw new Error('Supabase 환경변수가 설정되지 않았습니다.');
+      }
+      
+      const supabase = createClient(
+        `https://${projectId}.supabase.co`,
+        anonKey
+      );
+
       let query = supabase
         .from(selectedType === 'susi' ? 'susi_university_data' : 'jeongsi_university_data')
         .select('*')
@@ -46,23 +64,25 @@ export function DataViewer() {
       if (searchTerm) {
         query = query.or(`university.ilike.%${searchTerm}%,department.ilike.%${searchTerm}%`);
       }
-      if (selectedRegion) {
+      if (selectedRegion && selectedRegion !== 'all') {
         query = query.eq('region', selectedRegion);
       }
-      if (selectedYear) {
+      if (selectedYear && selectedYear !== 'all') {
         query = query.eq('year', parseInt(selectedYear));
       }
 
-      const { data: result, error } = await query;
+      const { data: result, error: supabaseError } = await query;
 
-      if (error) {
-        console.error('데이터 로드 오류:', error);
-        return;
+      if (supabaseError) {
+        console.error('Supabase 에러:', supabaseError);
+        throw new Error(`데이터 로드 실패: ${supabaseError.message}`);
       }
 
       setData(result || []);
-    } catch (error) {
-      console.error('데이터 로드 오류:', error);
+    } catch (err) {
+      console.error('데이터 로드 오류:', err);
+      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -78,9 +98,25 @@ export function DataViewer() {
     loadData();
   };
 
+  // 뒤로가기 함수
+  const handleBack = () => {
+    window.history.back();
+  };
+
   return (
     <div className="min-h-screen bg-navy-50 p-4">
       <div className="max-w-7xl mx-auto">
+        {/* 뒤로가기 버튼 */}
+        <div className="mb-4">
+          <Button 
+            onClick={handleBack}
+            variant="outline" 
+            className="border-navy-300 text-navy-700 hover:bg-navy-100"
+          >
+            ← 뒤로가기
+          </Button>
+        </div>
+
         <div className="mb-6">
           <h1 className="text-3xl mb-2 text-navy-900 flex items-center">
             <Database className="w-8 h-8 mr-3 text-gold-600" />
@@ -90,6 +126,14 @@ export function DataViewer() {
             Supabase에서 직접 로드한 대학 입시 데이터를 확인할 수 있습니다.
           </p>
         </div>
+
+        {/* 에러 메시지 */}
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
         {/* 필터 섹션 */}
         <Card className="mb-6 shadow-lg">
@@ -133,7 +177,7 @@ export function DataViewer() {
                     <SelectValue placeholder="전체 지역" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">전체 지역</SelectItem>
+                    <SelectItem value="all">전체 지역</SelectItem>
                     <SelectItem value="서울">서울</SelectItem>
                     <SelectItem value="경기">경기</SelectItem>
                     <SelectItem value="인천">인천</SelectItem>
@@ -162,7 +206,7 @@ export function DataViewer() {
                     <SelectValue placeholder="전체 연도" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">전체 연도</SelectItem>
+                    <SelectItem value="all">전체 연도</SelectItem>
                     <SelectItem value="2025">2025</SelectItem>
                     <SelectItem value="2024">2024</SelectItem>
                     <SelectItem value="2023">2023</SelectItem>
