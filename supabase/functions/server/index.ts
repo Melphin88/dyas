@@ -130,7 +130,7 @@ function validateFileRecord(record: any): record is CSVFileRecord {
 }
 
 // 회원가입
-app.post('/make-server-72188212/signup', async (c) => {
+app.post('/server/signup', async (c) => {
   try {
     const { email, password, name, isAdmin } = await c.req.json()
     
@@ -171,7 +171,7 @@ app.post('/make-server-72188212/signup', async (c) => {
 })
 
 // 로그인 후 사용자 정보 확인
-app.post('/make-server-72188212/signin', async (c) => {
+app.post('/server/signin', async (c) => {
   try {
     const user = await requireAuth(c.req.raw)
     const userData = await kv.get(`user:${user.id}`)
@@ -188,7 +188,7 @@ app.post('/make-server-72188212/signin', async (c) => {
 })
 
 // 현재 사용자 정보
-app.get('/make-server-72188212/auth/me', async (c) => {
+app.get('/server/auth/me', async (c) => {
   try {
     const user = await requireAuth(c.req.raw)
     const userData = await kv.get(`user:${user.id}`)
@@ -200,7 +200,7 @@ app.get('/make-server-72188212/auth/me', async (c) => {
 })
 
 // CSV 파일 업로드 및 버전 관리 (수시/정시 분리) - 개선된 버전
-app.post('/make-server-72188212/upload-csv-file/:type', async (c) => {
+app.post('/server/upload-csv-file/:type', async (c) => {
   try {
     const type = c.req.param('type') as 'susi' | 'jeongsi'
     
@@ -320,7 +320,7 @@ app.post('/make-server-72188212/upload-csv-file/:type', async (c) => {
 })
 
 // CSV 파일 목록 조회 (수시/정시 분리) - 개선된 버전
-app.get('/make-server-72188212/csv-files/:type', async (c) => {
+app.get('/server/csv-files/:type', async (c) => {
   try {
     const type = c.req.param('type') as 'susi' | 'jeongsi'
     
@@ -347,7 +347,7 @@ app.get('/make-server-72188212/csv-files/:type', async (c) => {
 })
 
 // 특정 CSV 파일 데이터 조회 - 개선된 버전
-app.get('/make-server-72188212/csv-data/:type/:fileId', async (c) => {
+app.get('/server/csv-data/:type/:fileId', async (c) => {
   try {
     const type = c.req.param('type') as 'susi' | 'jeongsi'
     const fileId = c.req.param('fileId')
@@ -393,7 +393,7 @@ app.get('/make-server-72188212/csv-data/:type/:fileId', async (c) => {
 })
 
 // CSV 파일 활성화/적용 - 개선된 버전
-app.post('/make-server-72188212/apply-csv-file/:type/:fileId', async (c) => {
+app.post('/server/apply-csv-file/:type/:fileId', async (c) => {
   try {
     const type = c.req.param('type') as 'susi' | 'jeongsi'
     const fileId = c.req.param('fileId')
@@ -428,7 +428,7 @@ app.post('/make-server-72188212/apply-csv-file/:type/:fileId', async (c) => {
 })
 
 // CSV 파일 삭제 - 개선된 버전
-app.delete('/make-server-72188212/csv-file/:type/:fileId', async (c) => {
+app.delete('/server/csv-file/:type/:fileId', async (c) => {
   try {
     const type = c.req.param('type') as 'susi' | 'jeongsi'
     const fileId = c.req.param('fileId')
@@ -462,7 +462,7 @@ app.delete('/make-server-72188212/csv-file/:type/:fileId', async (c) => {
 })
 
 // 현재 활성화된 수시/정시 대학 데이터 조회 (추천 시스템용) - 개선된 버전
-app.get('/make-server-72188212/university-data/:type', async (c) => {
+app.get('/server/university-data/:type', async (c) => {
   try {
     const type = c.req.param('type') as 'susi' | 'jeongsi'
     
@@ -518,7 +518,7 @@ app.get('/make-server-72188212/university-data/:type', async (c) => {
 })
 
 // 대학 데이터 업로드 (기존 호환성 유지)
-app.post('/make-server-72188212/upload-csv', async (c) => {
+app.post('/server/upload-csv', async (c) => {
   try {
     const { csvData } = await c.req.json()
     
@@ -548,7 +548,7 @@ app.post('/make-server-72188212/upload-csv', async (c) => {
 })
 
 // 현재 활성화된 대학 데이터 조회 (기존 호환성 유지)
-app.get('/make-server-72188212/university-data', async (c) => {
+app.get('/server/university-data', async (c) => {
   try {
     const universities = await kv.getByPrefix('university:')
     return c.json({ data: universities.map(item => item.value) })
@@ -559,7 +559,7 @@ app.get('/make-server-72188212/university-data', async (c) => {
 })
 
 // 학생 성적 저장
-app.post('/make-server-72188212/save-scores', async (c) => {
+app.post('/server/save-scores', async (c) => {
   try {
     const user = await requireAuth(c.req.raw)
     const { scores } = await c.req.json()
@@ -583,7 +583,7 @@ app.post('/make-server-72188212/save-scores', async (c) => {
 })
 
 // 내 성적 조회
-app.get('/make-server-72188212/my-scores', async (c) => {
+app.get('/server/my-scores', async (c) => {
   try {
     const user = await requireAuth(c.req.raw)
     const scores = await kv.get(`user_scores_${user.id}`)
@@ -595,7 +595,7 @@ app.get('/make-server-72188212/my-scores', async (c) => {
 })
 
 // 모든 사용자 성적 조회 (관리자 전용)
-app.get('/make-server-72188212/all-scores', async (c) => {
+app.get('/server/all-scores', async (c) => {
   try {
     await requireAdmin(c.req.raw)
     const allScores = await kv.getByPrefix('user_scores_')
@@ -607,7 +607,7 @@ app.get('/make-server-72188212/all-scores', async (c) => {
 })
 
 // 특정 사용자 성적 삭제 (관리자 전용)
-app.delete('/make-server-72188212/delete-user-scores/:userId', async (c) => {
+app.delete('/server/delete-user-scores/:userId', async (c) => {
   try {
     await requireAdmin(c.req.raw)
     const userId = c.req.param('userId')
@@ -622,8 +622,8 @@ app.delete('/make-server-72188212/delete-user-scores/:userId', async (c) => {
 })
 
 // 헬스체크
-app.get('/make-server-72188212/health', (c) => {
+app.get('/server/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
-Deno.serve(app.fetch) 
+Deno.serve(app.fetch)
