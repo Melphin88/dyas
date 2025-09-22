@@ -252,8 +252,14 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
 
       if (response.ok) {
         const result = await response.json();
-        console.log('추천 결과:', result);
+        console.log('=== 추천 결과 상세 정보 ===');
+        console.log('추천 개수:', result.recommendations?.length || 0);
+        console.log('수시 추천:', result.recommendations?.filter(r => r.admissionType?.includes('수시')).length || 0);
+        console.log('정시 추천:', result.recommendations?.filter(r => r.admissionType?.includes('정시')).length || 0);
+        console.log('첫 번째 추천:', result.recommendations?.[0]);
+        console.log('추천 대학 목록:', result.recommendations?.map(r => `${r.university} ${r.department} (${r.probability})`));
         console.log('디버그 정보:', result.debugInfo);
+        console.log('=== 추천 결과 상세 정보 끝 ===');
         setRecommendations(result.recommendations || []);
       } else {
         console.error('추천 결과 가져오기 실패');
