@@ -140,11 +140,12 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
     if (simpleSuneungData) {
       // simpleSuneungData에서 유효한 등급만 추출
       const validScores = [
-        simpleSuneungData.korean, 
-        simpleSuneungData.math, 
-        simpleSuneungData.english, 
-        simpleSuneungData.inquiry1, 
-        simpleSuneungData.inquiry2
+        simpleSuneungData.korean?.grade, 
+        simpleSuneungData.math?.grade, 
+        simpleSuneungData.english?.grade, 
+        simpleSuneungData.koreanHistory?.grade,
+        simpleSuneungData.inquiry1?.grade, 
+        simpleSuneungData.inquiry2?.grade
       ].filter(score => score > 0 && score <= 9); // 1-9등급 범위 확인
       
       console.log('수능 성적 데이터:', simpleSuneungData);

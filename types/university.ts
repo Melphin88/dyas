@@ -8,12 +8,34 @@ export interface SimpleGradeData {
 }
 
 export interface SimpleSuneungData {
-  korean: number;
-  math: number;
-  english: number;
-  inquiry1: number;
-  inquiry2: number;
-  total_score?: number;
+  korean: {
+    grade: number;
+    standardScore: number;
+    rawScore: number;
+  };
+  math: {
+    grade: number;
+    standardScore: number;
+    rawScore: number;
+  };
+  english: {
+    grade: number;
+    rawScore: number;
+  };
+  koreanHistory: {
+    grade: number;
+    rawScore: number;
+  };
+  inquiry1: {
+    grade: number;
+    standardScore: number;
+    rawScore: number;
+  };
+  inquiry2: {
+    grade: number;
+    standardScore: number;
+    rawScore: number;
+  };
 }
 
 // 수시 CSV 데이터 구조
