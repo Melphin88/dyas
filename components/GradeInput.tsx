@@ -779,8 +779,8 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
           <Tabs value={activeMainTab} onValueChange={setActiveMainTab}>
             <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="simple">간편 입력</TabsTrigger>
-              <TabsTrigger value="school">내신 상세</TabsTrigger>
-              <TabsTrigger value="suneung">모의고사/수능</TabsTrigger>
+              <TabsTrigger value="school">성적 입력</TabsTrigger>
+              <TabsTrigger value="suneung">수능/모의고사</TabsTrigger>
             </TabsList>
 
             {/* 간편 내신 성적 입력 탭 */}
