@@ -275,6 +275,103 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
     }));
   };
 
+  // 간단한 수능 성적 입력 섹션 렌더링
+  const renderSimpleSuneungSection = () => (
+    <Card className="shadow-lg border-navy-200">
+      <CardHeader className="bg-navy-50">
+        <CardTitle className="text-navy-800">수능 성적 입력</CardTitle>
+        <p className="text-navy-600">각 과목의 등급을 입력해주세요.</p>
+      </CardHeader>
+      <CardContent className="pt-6 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* 국어 */}
+          <div className="space-y-2">
+            <Label className="text-navy-600">국어</Label>
+            <Select value={simpleSuneung.korean?.toString() || ''} onValueChange={(value) => updateSimpleSuneung('korean', parseInt(value))}>
+              <SelectTrigger>
+                <SelectValue placeholder="등급 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(grade => (
+                  <SelectItem key={grade} value={grade.toString()}>{grade}등급</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 수학 */}
+          <div className="space-y-2">
+            <Label className="text-navy-600">수학</Label>
+            <Select value={simpleSuneung.math?.toString() || ''} onValueChange={(value) => updateSimpleSuneung('math', parseInt(value))}>
+              <SelectTrigger>
+                <SelectValue placeholder="등급 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(grade => (
+                  <SelectItem key={grade} value={grade.toString()}>{grade}등급</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 영어 */}
+          <div className="space-y-2">
+            <Label className="text-navy-600">영어</Label>
+            <Select value={simpleSuneung.english?.toString() || ''} onValueChange={(value) => updateSimpleSuneung('english', parseInt(value))}>
+              <SelectTrigger>
+                <SelectValue placeholder="등급 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(grade => (
+                  <SelectItem key={grade} value={grade.toString()}>{grade}등급</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 탐구1 */}
+          <div className="space-y-2">
+            <Label className="text-navy-600">탐구1</Label>
+            <Select value={simpleSuneung.inquiry1?.toString() || ''} onValueChange={(value) => updateSimpleSuneung('inquiry1', parseInt(value))}>
+              <SelectTrigger>
+                <SelectValue placeholder="등급 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(grade => (
+                  <SelectItem key={grade} value={grade.toString()}>{grade}등급</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 탐구2 */}
+          <div className="space-y-2">
+            <Label className="text-navy-600">탐구2</Label>
+            <Select value={simpleSuneung.inquiry2?.toString() || ''} onValueChange={(value) => updateSimpleSuneung('inquiry2', parseInt(value))}>
+              <SelectTrigger>
+                <SelectValue placeholder="등급 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(grade => (
+                  <SelectItem key={grade} value={grade.toString()}>{grade}등급</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        <div className="mt-6 p-4 bg-navy-50 rounded-lg">
+          <h5 className="font-medium text-navy-800 mb-2">💡 수능 성적 입력 가이드</h5>
+          <ul className="text-sm text-navy-600 space-y-1">
+            <li>• 각 과목의 등급을 입력하세요</li>
+            <li>• 아직 시험을 보지 않은 과목은 선택하지 않으셔도 됩니다</li>
+            <li>• 입력한 성적은 대학 추천에 활용됩니다</li>
+          </ul>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   // 개인정보 업데이트
   const updatePersonalInfo = (field: keyof StudentPersonalInfo, value: string) => {
     setGrades(prev => ({
@@ -850,102 +947,5 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
         </form>
       </div>
     </div>
-  );
-
-  // 간단한 수능 성적 입력 섹션 렌더링
-  const renderSimpleSuneungSection = () => (
-    <Card className="shadow-lg border-navy-200">
-      <CardHeader className="bg-navy-50">
-        <CardTitle className="text-navy-800">수능 성적 입력</CardTitle>
-        <p className="text-navy-600">각 과목의 등급을 입력해주세요.</p>
-      </CardHeader>
-      <CardContent className="pt-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* 국어 */}
-          <div className="space-y-2">
-            <Label className="text-navy-600">국어</Label>
-            <Select value={simpleSuneung.korean?.toString() || ''} onValueChange={(value) => updateSimpleSuneung('korean', parseInt(value))}>
-              <SelectTrigger>
-                <SelectValue placeholder="등급 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(grade => (
-                  <SelectItem key={grade} value={grade.toString()}>{grade}등급</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* 수학 */}
-          <div className="space-y-2">
-            <Label className="text-navy-600">수학</Label>
-            <Select value={simpleSuneung.math?.toString() || ''} onValueChange={(value) => updateSimpleSuneung('math', parseInt(value))}>
-              <SelectTrigger>
-                <SelectValue placeholder="등급 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(grade => (
-                  <SelectItem key={grade} value={grade.toString()}>{grade}등급</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* 영어 */}
-          <div className="space-y-2">
-            <Label className="text-navy-600">영어</Label>
-            <Select value={simpleSuneung.english?.toString() || ''} onValueChange={(value) => updateSimpleSuneung('english', parseInt(value))}>
-              <SelectTrigger>
-                <SelectValue placeholder="등급 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(grade => (
-                  <SelectItem key={grade} value={grade.toString()}>{grade}등급</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* 탐구1 */}
-          <div className="space-y-2">
-            <Label className="text-navy-600">탐구1</Label>
-            <Select value={simpleSuneung.inquiry1?.toString() || ''} onValueChange={(value) => updateSimpleSuneung('inquiry1', parseInt(value))}>
-              <SelectTrigger>
-                <SelectValue placeholder="등급 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(grade => (
-                  <SelectItem key={grade} value={grade.toString()}>{grade}등급</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* 탐구2 */}
-          <div className="space-y-2">
-            <Label className="text-navy-600">탐구2</Label>
-            <Select value={simpleSuneung.inquiry2?.toString() || ''} onValueChange={(value) => updateSimpleSuneung('inquiry2', parseInt(value))}>
-              <SelectTrigger>
-                <SelectValue placeholder="등급 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(grade => (
-                  <SelectItem key={grade} value={grade.toString()}>{grade}등급</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        
-        <div className="mt-6 p-4 bg-navy-50 rounded-lg">
-          <h5 className="font-medium text-navy-800 mb-2">💡 수능 성적 입력 가이드</h5>
-          <ul className="text-sm text-navy-600 space-y-1">
-            <li>• 각 과목의 등급을 입력하세요</li>
-            <li>• 아직 시험을 보지 않은 과목은 선택하지 않으셔도 됩니다</li>
-            <li>• 입력한 성적은 대학 추천에 활용됩니다</li>
-          </ul>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
