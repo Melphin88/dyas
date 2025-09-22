@@ -1,5 +1,5 @@
 
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
@@ -100,7 +100,71 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
   const [activeTab, setActiveTab] = useState('susi');
   const [activeJungsiTab, setActiveJungsiTab] = useState('ga');
   const [expandedAnalysis, setExpandedAnalysis] = useState<{[key: string]: boolean}>({});
+  const [recommendations, setRecommendations] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
+
+  // 추천 결과 가져오기
+  const fetchRecommendations = async () => {
+    setLoading(true);
+    try {
+      // 학생 데이터 구성
+      const studentData = {
+        name: studentName || "학생",
+        schoolType: grades?.personalInfo?.schoolType === '특목고' ? '특목고' : 
+                   grades?.personalInfo?.schoolType === '자사고' ? '자사고' :
+                   grades?.personalInfo?.schoolType === '국제고' ? '국제고' : '일반고',
+        schoolGrades: grades?.school || {
+          grade1: { semester1: {}, semester2: {} },
+          grade2: { semester1: {}, semester2: {} },
+          grade3: { semester1: {}, semester2: {} }
+        },
+        suneungGrades: {
+          korean: { grade: simpleSuneungData?.korean || 0, standardScore: 0, percentile: 0 },
+          math: { grade: simpleSuneungData?.math || 0, standardScore: 0, percentile: 0 },
+          english: { grade: simpleSuneungData?.english || 0, standardScore: 0, percentile: 0 },
+          koreanHistory: { grade: 0, standardScore: 0, percentile: 0 },
+          inquiry1: { grade: simpleSuneungData?.inquiry1 || 0, standardScore: 0, percentile: 0 },
+          inquiry2: { grade: simpleSuneungData?.inquiry2 || 0, standardScore: 0, percentile: 0 }
+        },
+        preferredUniversities: [],
+        preferredMajors: [],
+        preferredRegions: []
+      };
+
+      const response = await fetch(`https://kgbcqvvkahugbrqlomjc.supabase.co/functions/v1/calculate-recommendations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnYmNxdnZrYWh1Z2JycWxvbWpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2ODM5MjgsImV4cCI6MjA3MTI1OTkyOH0.o23VzWrv9Kv6jWb7eIw4a3rWkkWfA5TQyU2Z1RRhvQI`
+        },
+        body: JSON.stringify({
+          studentData,
+          debugMode: false
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setRecommendations(result.recommendations || []);
+      } else {
+        console.error('추천 결과 가져오기 실패');
+        setRecommendations([]);
+      }
+    } catch (error) {
+      console.error('추천 결과 가져오기 오류:', error);
+      setRecommendations([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 컴포넌트 마운트 시 추천 결과 가져오기
+  React.useEffect(() => {
+    if (simpleGradeData || simpleSuneungData) {
+      fetchRecommendations();
+    }
+  }, [simpleGradeData, simpleSuneungData]);
 
   const calculateSchoolGPA = (): number => {
     if (simpleGradeData) {
@@ -269,97 +333,124 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
   const schoolBestRatio = grades ? calculateBestReflectionRatio(grades, 'school') : '분석 데이터 부족';
   const suneungBestRatio = grades ? calculateBestReflectionRatio(grades, 'suneung') : '분석 데이터 부족';
 
-  // 상세 수시 대학 데이터 (20개)
-  const susiUniversities: DetailedUniversity[] = [
-    {
-      name: '서울대학교',
-      department: '컴퓨터공학부',
-      admissionType: '수시',
-      competitionRate: 15.2,
-      requiredGrade: 1.5,
-      matchPercentage: schoolGPA <= 1.5 ? 85 : schoolGPA <= 2.0 ? 65 : 45,
-      location: '서울특별시',
-      description: '국내 최고 수준의 컴퓨터공학 교육과 연구를 제공합니다.',
-      requirements: {
-        minInternalGrade: 1.5,
-        requiredSubjects: ['수학', '과학'],
-        additionalFactors: ['학교생활기록부', '자기소개서', '면접']
-      },
-      admissionStrategy: '서울대는 학생부종합전형에서 내신 1.5등급 이상을 요구하며, 특히 수학·과학 성적이 중요합니다.',
-      competitionAnalysis: '최상위권 경쟁으로 전국 상위 1% 이내 학생들이 지원합니다.',
-      recommendation: schoolGPA <= 1.5 ? 'optimal' : schoolGPA <= 2.0 ? 'challenge' : 'challenge',
-      reflectionRatio: '수학 40%, 과학 30%, 국어 20%, 영어 10%',
-      admissionData: {
-        lastYear: { score: 1.45, students: 32 },
-        threeYearAvg: { score: 1.48, students: 30 },
-        yearlyData: [
-          { year: 2022, score: 1.52, students: 28 },
-          { year: 2021, score: 1.47, students: 31 }
-        ]
-      }
-    },
-    {
-      name: '연세대학교',
-      department: '경영학과',
-      admissionType: '수시',
-      competitionRate: 12.8,
-      requiredGrade: 2.0,
-      matchPercentage: schoolGPA <= 2.0 ? 80 : schoolGPA <= 2.5 ? 60 : 40,
-      location: '서울특별시',
-      description: '글로벌 리더십을 갖춘 경영인재를 양성합니다.',
-      requirements: {
-        minInternalGrade: 2.0,
-        requiredSubjects: ['국어', '수학', '영어'],
-        additionalFactors: ['학교생활기록부', '자기소개서', '면접']
-      },
-      admissionStrategy: '연세대 경영학과는 균형 잡힌 성적과 리더십 경험을 중시합니다.',
-      competitionAnalysis: '상위권 경쟁이며, 특히 경영학과는 인기가 높아 경쟁률이 치열합니다.',
-      recommendation: schoolGPA <= 2.0 ? 'optimal' : schoolGPA <= 2.5 ? 'challenge' : 'challenge',
-      reflectionRatio: '국어 30%, 수학 30%, 영어 25%, 사회 15%',
-      admissionData: {
-        lastYear: { score: 1.95, students: 45 },
-        threeYearAvg: { score: 1.98, students: 43 },
-        yearlyData: [
-          { year: 2022, score: 2.02, students: 41 },
-          { year: 2021, score: 1.97, students: 44 }
-        ]
-      }
-    }
-  ];
+  // 실제 추천 결과에서 수시 대학 데이터 추출
+  const susiUniversities: DetailedUniversity[] = recommendations 
+    ? recommendations
+        .filter((rec: any) => rec.admissionType === '수시' || rec.admissionType?.includes('수시'))
+        .slice(0, 20)
+        .map((rec: any) => ({
+          name: rec.university,
+          department: rec.department,
+          admissionType: '수시',
+          competitionRate: rec.cutOffData?.competitionRate || 0,
+          requiredGrade: rec.cutOffData?.grade50 || 0,
+          matchPercentage: rec.probabilityScore,
+          location: '지역 정보 없음',
+          description: `${rec.university} ${rec.department} - ${rec.probability} 추천`,
+          requirements: {
+            minInternalGrade: rec.cutOffData?.grade50,
+            requiredSubjects: [],
+            additionalFactors: rec.reasons || []
+          },
+          admissionStrategy: rec.reasons?.join(', ') || '추천 이유 없음',
+          competitionAnalysis: `경쟁률 ${rec.cutOffData?.competitionRate || 0}:1`,
+          recommendation: rec.probability === '안정' ? 'safe' : rec.probability === '적정' ? 'optimal' : 'challenge',
+          reflectionRatio: '반영비율 정보 없음',
+          admissionData: {
+            lastYear: { score: rec.cutOffData?.grade50 || 0, students: 0 },
+            threeYearAvg: { score: rec.cutOffData?.grade50 || 0, students: 0 },
+            yearlyData: []
+          }
+        }))
+    : [];
 
-  // 정시 대학 데이터
+  // 실제 추천 결과에서 정시 대학 데이터 추출
+  const jungsiRecommendations = recommendations 
+    ? recommendations.filter((rec: any) => rec.admissionType === '정시' || rec.admissionType?.includes('정시'))
+    : [];
+
   const jungsiUniversities = {
-    ga: [
-      {
-        name: '서울대학교',
-        department: '자연과학대학',
+    ga: jungsiRecommendations
+      .filter((rec: any) => rec.admissionType?.includes('가군') || rec.admissionType === '정시')
+      .slice(0, 6)
+      .map((rec: any) => ({
+        name: rec.university,
+        department: rec.department,
         admissionType: '정시 가군',
-        competitionRate: 8.5,
-        requiredGrade: 1.2,
-        matchPercentage: suneungAverage <= 1.5 ? 80 : suneungAverage <= 2.0 ? 60 : 40,
-        location: '서울특별시',
-        description: '기초과학 연구의 최고 수준을 자랑합니다.',
+        competitionRate: rec.cutOffData?.competitionRate || 0,
+        requiredGrade: rec.cutOffData?.grade50 || 0,
+        matchPercentage: rec.probabilityScore,
+        location: '지역 정보 없음',
+        description: `${rec.university} ${rec.department} - ${rec.probability} 추천`,
         requirements: {
-          minSuneungGrade: 1.2,
-          requiredSubjects: ['수학', '과학탐구'],
-          additionalFactors: ['수능 최저학력기준']
+          minSuneungGrade: rec.cutOffData?.grade50,
+          requiredSubjects: [],
+          additionalFactors: rec.reasons || []
         },
-        admissionStrategy: '수능에서 수학과 과학탐구 영역이 특히 중요합니다.',
-        competitionAnalysis: '자연계열 최상위권으로 수학·과학 만점자들이 대거 지원합니다.',
-        recommendation: suneungAverage <= 1.5 ? 'optimal' : suneungAverage <= 2.0 ? 'challenge' : 'challenge',
-        reflectionRatio: '수학 45%, 과학 30%, 국어 15%, 영어 10%',
+        admissionStrategy: rec.reasons?.join(', ') || '추천 이유 없음',
+        competitionAnalysis: `경쟁률 ${rec.cutOffData?.competitionRate || 0}:1`,
+        recommendation: rec.probability === '안정' ? 'safe' : rec.probability === '적정' ? 'optimal' : 'challenge',
+        reflectionRatio: '반영비율 정보 없음',
         admissionData: {
-          lastYear: { score: 1.15, students: 28 },
-          threeYearAvg: { score: 1.18, students: 26 },
-          yearlyData: [
-            { year: 2022, score: 1.22, students: 24 },
-            { year: 2021, score: 1.17, students: 27 }
-          ]
+          lastYear: { score: rec.cutOffData?.grade50 || 0, students: 0 },
+          threeYearAvg: { score: rec.cutOffData?.grade50 || 0, students: 0 },
+          yearlyData: []
         }
-      } as DetailedUniversity
-    ],
-    na: [],
-    da: []
+      } as DetailedUniversity),
+    na: jungsiRecommendations
+      .filter((rec: any) => rec.admissionType?.includes('나군'))
+      .slice(0, 6)
+      .map((rec: any) => ({
+        name: rec.university,
+        department: rec.department,
+        admissionType: '정시 나군',
+        competitionRate: rec.cutOffData?.competitionRate || 0,
+        requiredGrade: rec.cutOffData?.grade50 || 0,
+        matchPercentage: rec.probabilityScore,
+        location: '지역 정보 없음',
+        description: `${rec.university} ${rec.department} - ${rec.probability} 추천`,
+        requirements: {
+          minSuneungGrade: rec.cutOffData?.grade50,
+          requiredSubjects: [],
+          additionalFactors: rec.reasons || []
+        },
+        admissionStrategy: rec.reasons?.join(', ') || '추천 이유 없음',
+        competitionAnalysis: `경쟁률 ${rec.cutOffData?.competitionRate || 0}:1`,
+        recommendation: rec.probability === '안정' ? 'safe' : rec.probability === '적정' ? 'optimal' : 'challenge',
+        reflectionRatio: '반영비율 정보 없음',
+        admissionData: {
+          lastYear: { score: rec.cutOffData?.grade50 || 0, students: 0 },
+          threeYearAvg: { score: rec.cutOffData?.grade50 || 0, students: 0 },
+          yearlyData: []
+        }
+      } as DetailedUniversity),
+    da: jungsiRecommendations
+      .filter((rec: any) => rec.admissionType?.includes('다군'))
+      .slice(0, 6)
+      .map((rec: any) => ({
+        name: rec.university,
+        department: rec.department,
+        admissionType: '정시 다군',
+        competitionRate: rec.cutOffData?.competitionRate || 0,
+        requiredGrade: rec.cutOffData?.grade50 || 0,
+        matchPercentage: rec.probabilityScore,
+        location: '지역 정보 없음',
+        description: `${rec.university} ${rec.department} - ${rec.probability} 추천`,
+        requirements: {
+          minSuneungGrade: rec.cutOffData?.grade50,
+          requiredSubjects: [],
+          additionalFactors: rec.reasons || []
+        },
+        admissionStrategy: rec.reasons?.join(', ') || '추천 이유 없음',
+        competitionAnalysis: `경쟁률 ${rec.cutOffData?.competitionRate || 0}:1`,
+        recommendation: rec.probability === '안정' ? 'safe' : rec.probability === '적정' ? 'optimal' : 'challenge',
+        reflectionRatio: '반영비율 정보 없음',
+        admissionData: {
+          lastYear: { score: rec.cutOffData?.grade50 || 0, students: 0 },
+          threeYearAvg: { score: rec.cutOffData?.grade50 || 0, students: 0 },
+          yearlyData: []
+        }
+      } as DetailedUniversity)
   };
 
   const toggleAnalysis = (universityKey: string) => {
@@ -592,9 +683,19 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
                 </p>
               </CardHeader>
               <CardContent className="pt-6">
-                <div className="space-y-4">
-                  {susiUniversities.map((university, index) => renderEnhancedUniversityCard(university, index))}
-                </div>
+                {loading ? (
+                  <div className="text-center py-8">
+                    <div className="text-navy-600">추천 결과를 계산 중입니다...</div>
+                  </div>
+                ) : susiUniversities.length > 0 ? (
+                  <div className="space-y-4">
+                    {susiUniversities.map((university, index) => renderEnhancedUniversityCard(university, index))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-navy-600">추천할 수시 대학이 없습니다.</div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -613,9 +714,19 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
                     <CardTitle className="text-navy-800">정시 가군 추천 대학</CardTitle>
                   </CardHeader>
                   <CardContent className="pt-6">
-                    <div className="space-y-4">
-                      {jungsiUniversities.ga.map((university, index) => renderEnhancedUniversityCard(university, index))}
-                    </div>
+                    {loading ? (
+                      <div className="text-center py-8">
+                        <div className="text-navy-600">추천 결과를 계산 중입니다...</div>
+                      </div>
+                    ) : jungsiUniversities.ga.length > 0 ? (
+                      <div className="space-y-4">
+                        {jungsiUniversities.ga.map((university, index) => renderEnhancedUniversityCard(university, index))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="text-navy-600">추천할 가군 대학이 없습니다.</div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -626,7 +737,19 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
                     <CardTitle className="text-navy-800">정시 나군 추천 대학</CardTitle>
                   </CardHeader>
                   <CardContent className="pt-6">
-                    <p className="text-navy-600 text-center py-8">나군 데이터를 준비 중입니다.</p>
+                    {loading ? (
+                      <div className="text-center py-8">
+                        <div className="text-navy-600">추천 결과를 계산 중입니다...</div>
+                      </div>
+                    ) : jungsiUniversities.na.length > 0 ? (
+                      <div className="space-y-4">
+                        {jungsiUniversities.na.map((university, index) => renderEnhancedUniversityCard(university, index))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="text-navy-600">추천할 나군 대학이 없습니다.</div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -637,7 +760,19 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
                     <CardTitle className="text-navy-800">정시 다군 추천 대학</CardTitle>
                   </CardHeader>
                   <CardContent className="pt-6">
-                    <p className="text-navy-600 text-center py-8">다군 데이터를 준비 중입니다.</p>
+                    {loading ? (
+                      <div className="text-center py-8">
+                        <div className="text-navy-600">추천 결과를 계산 중입니다...</div>
+                      </div>
+                    ) : jungsiUniversities.da.length > 0 ? (
+                      <div className="space-y-4">
+                        {jungsiUniversities.da.map((university, index) => renderEnhancedUniversityCard(university, index))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="text-navy-600">추천할 다군 대학이 없습니다.</div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
