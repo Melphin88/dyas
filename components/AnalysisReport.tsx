@@ -436,7 +436,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
 
   const jungsiUniversities = {
     ga: jungsiRecommendations
-      .filter((rec: any) => rec.admissionType?.includes('가군') || rec.admissionType === '정시')
+      .filter((rec: any) => rec.admissionType?.includes('정시(가)'))
       .slice(0, 6)
       .map((rec: any) => ({
         name: rec.university,
@@ -463,7 +463,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         }
       } as DetailedUniversity)),
     na: jungsiRecommendations
-      .filter((rec: any) => rec.admissionType?.includes('나군'))
+      .filter((rec: any) => rec.admissionType?.includes('정시(나)'))
       .slice(0, 6)
       .map((rec: any) => ({
         name: rec.university,
@@ -490,7 +490,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         }
       } as DetailedUniversity)),
     da: jungsiRecommendations
-      .filter((rec: any) => rec.admissionType?.includes('다군'))
+      .filter((rec: any) => rec.admissionType?.includes('정시(다)'))
       .slice(0, 6)
       .map((rec: any) => ({
         name: rec.university,
