@@ -447,19 +447,13 @@ function App() {
               setCurrentView('recommendations');
             }}
             onSaveSimpleGrade={handleSaveSimpleGrade}
+            onSaveSimpleSuneung={handleSaveSimpleSuneung}
             initialSimpleGrades={simpleGradeData}
+            initialSimpleSuneung={simpleSuneungData}
             onBack={() => setCurrentView('login')}
           />
         )}
 
-        {currentView === 'suneung' && (
-          <SuneungInput
-            initialData={simpleSuneungData}
-            onSave={handleSaveSimpleSuneung}
-            onBack={() => setCurrentView('grade')}
-            onViewResults={() => setCurrentView('report')}
-          />
-        )}
 
 
         {currentView === 'report' && currentUser && (

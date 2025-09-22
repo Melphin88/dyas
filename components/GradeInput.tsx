@@ -5,6 +5,7 @@ import { Label } from './ui/label';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { SimpleSuneungData } from '../types/university';
 
 interface Subject {
   grade: number;
@@ -78,7 +79,9 @@ interface GradeInputProps {
   initialGrades?: GradeData;
   onSubmit: (grades: GradeData) => void;
   onSaveSimpleGrade?: (data: SimpleGradeData) => void;
+  onSaveSimpleSuneung?: (data: SimpleSuneungData) => void;
   initialSimpleGrades?: SimpleGradeData | null;
+  initialSimpleSuneung?: SimpleSuneungData | null;
   onBack: () => void;
 }
 
@@ -185,7 +188,7 @@ const createEmptyGradeData = (): GradeData => ({
   suneung: createEmptySuneungGrades()
 });
 
-export function GradeInput({ studentId, studentName, initialGrades, onSubmit, onSaveSimpleGrade, initialSimpleGrades, onBack }: GradeInputProps) {
+export function GradeInput({ studentId, studentName, initialGrades, onSubmit, onSaveSimpleGrade, onSaveSimpleSuneung, initialSimpleGrades, initialSimpleSuneung, onBack }: GradeInputProps) {
   const [grades, setGrades] = useState<GradeData>(initialGrades || createEmptyGradeData());
   const [activeMainTab, setActiveMainTab] = useState('simple'); // 간단 입력을 기본으로
   const [activeGradeTab, setActiveGradeTab] = useState('grade1');
@@ -197,6 +200,15 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
     english: {},
     inquiry: {},
     specialtySubjects: {}
+  });
+
+  // 간단한 수능 성적 입력 상태
+  const [simpleSuneung, setSimpleSuneung] = useState<SimpleSuneungData>(initialSimpleSuneung || {
+    korean: 0,
+    math: 0,
+    english: 0,
+    inquiry1: 0,
+    inquiry2: 0
   });
   
   // 각 학년별 학기 탭 상태 관리
@@ -235,6 +247,8 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
     e.preventDefault();
     if (activeMainTab === 'simple' && onSaveSimpleGrade) {
       onSaveSimpleGrade(simpleGrades);
+    } else if (activeMainTab === 'suneung' && onSaveSimpleSuneung) {
+      onSaveSimpleSuneung(simpleSuneung);
     } else {
       onSubmit(grades);
     }
@@ -248,6 +262,14 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
         ...prev[subject],
         [semester]: grade
       }
+    }));
+  };
+
+  // 간단한 수능 성적 입력 업데이트
+  const updateSimpleSuneung = (subject: keyof SimpleSuneungData, grade: number) => {
+    setSimpleSuneung(prev => ({
+      ...prev,
+      [subject]: grade
     }));
   };
 
@@ -813,33 +835,115 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
 
             {/* 수능 탭 */}
             <TabsContent value="suneung">
-              <Card className="shadow-lg border-navy-200">
-                <CardHeader className="bg-navy-50">
-                  <CardTitle className="text-navy-800">수능 성적 입력</CardTitle>
-                  <p className="text-navy-600">각 과목의 표준점수, 백분위, 등급, 원점수를 입력해주세요.</p>
-                </CardHeader>
-                <CardContent className="space-y-6 pt-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {renderSuneungSubjectInput('korean', '국어', KOREAN_OPTIONS, true)}
-                    {renderSuneungSubjectInput('math', '수학', MATH_OPTIONS, true)}
-                    {renderSuneungSubjectInput('english', '영어')}
-                    {renderSuneungSubjectInput('koreanHistory', '한국사')}
-                    {renderSuneungSubjectInput('inquiry1', '탐구1', [...INQUIRY_OPTIONS.social, ...INQUIRY_OPTIONS.science], true)}
-                    {renderSuneungSubjectInput('inquiry2', '탐구2', [...INQUIRY_OPTIONS.social, ...INQUIRY_OPTIONS.science], true)}
-                    {renderSuneungSubjectInput('secondLanguage', '제2외국어/한문', SECOND_LANGUAGE_OPTIONS, true)}
-                  </div>
-                </CardContent>
-              </Card>
+              {renderSimpleSuneungSection()}
             </TabsContent>
           </Tabs>
 
           <div className="mt-8 flex justify-center">
             <Button type="submit" className="w-full max-w-md bg-gold-600 hover:bg-gold-700 text-white shadow-lg">
-              {activeMainTab === 'simple' ? '간편 성적 저장하고 다음 단계로' : '분석 결과 보기'}
+              {activeMainTab === 'simple' ? '간편 성적 저장하고 다음 단계로' : 
+               activeMainTab === 'suneung' ? '수능 성적 저장하고 분석 결과 보기' : '분석 결과 보기'}
             </Button>
           </div>
         </form>
       </div>
     </div>
+  );
+
+  // 간단한 수능 성적 입력 섹션 렌더링
+  const renderSimpleSuneungSection = () => (
+    <Card className="shadow-lg border-navy-200">
+      <CardHeader className="bg-navy-50">
+        <CardTitle className="text-navy-800">수능 성적 입력</CardTitle>
+        <p className="text-navy-600">각 과목의 등급을 입력해주세요.</p>
+      </CardHeader>
+      <CardContent className="pt-6 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* 국어 */}
+          <div className="space-y-2">
+            <Label className="text-navy-600">국어</Label>
+            <Select value={simpleSuneung.korean?.toString() || ''} onValueChange={(value) => updateSimpleSuneung('korean', parseInt(value))}>
+              <SelectTrigger>
+                <SelectValue placeholder="등급 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(grade => (
+                  <SelectItem key={grade} value={grade.toString()}>{grade}등급</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 수학 */}
+          <div className="space-y-2">
+            <Label className="text-navy-600">수학</Label>
+            <Select value={simpleSuneung.math?.toString() || ''} onValueChange={(value) => updateSimpleSuneung('math', parseInt(value))}>
+              <SelectTrigger>
+                <SelectValue placeholder="등급 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(grade => (
+                  <SelectItem key={grade} value={grade.toString()}>{grade}등급</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 영어 */}
+          <div className="space-y-2">
+            <Label className="text-navy-600">영어</Label>
+            <Select value={simpleSuneung.english?.toString() || ''} onValueChange={(value) => updateSimpleSuneung('english', parseInt(value))}>
+              <SelectTrigger>
+                <SelectValue placeholder="등급 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(grade => (
+                  <SelectItem key={grade} value={grade.toString()}>{grade}등급</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 탐구1 */}
+          <div className="space-y-2">
+            <Label className="text-navy-600">탐구1</Label>
+            <Select value={simpleSuneung.inquiry1?.toString() || ''} onValueChange={(value) => updateSimpleSuneung('inquiry1', parseInt(value))}>
+              <SelectTrigger>
+                <SelectValue placeholder="등급 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(grade => (
+                  <SelectItem key={grade} value={grade.toString()}>{grade}등급</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 탐구2 */}
+          <div className="space-y-2">
+            <Label className="text-navy-600">탐구2</Label>
+            <Select value={simpleSuneung.inquiry2?.toString() || ''} onValueChange={(value) => updateSimpleSuneung('inquiry2', parseInt(value))}>
+              <SelectTrigger>
+                <SelectValue placeholder="등급 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(grade => (
+                  <SelectItem key={grade} value={grade.toString()}>{grade}등급</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        <div className="mt-6 p-4 bg-navy-50 rounded-lg">
+          <h5 className="font-medium text-navy-800 mb-2">💡 수능 성적 입력 가이드</h5>
+          <ul className="text-sm text-navy-600 space-y-1">
+            <li>• 각 과목의 등급을 입력하세요</li>
+            <li>• 아직 시험을 보지 않은 과목은 선택하지 않으셔도 됩니다</li>
+            <li>• 입력한 성적은 대학 추천에 활용됩니다</li>
+          </ul>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
