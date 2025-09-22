@@ -136,8 +136,24 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
 
   const calculateSuneungAverage = (): number => {
     if (simpleSuneungData) {
-      const validScores = [simpleSuneungData.korean, simpleSuneungData.math, simpleSuneungData.english, simpleSuneungData.inquiry1, simpleSuneungData.inquiry2].filter(score => score > 0);
-      return validScores.length > 0 ? Number((validScores.reduce((sum, score) => sum + score, 0) / validScores.length).toFixed(2)) : 0;
+      // simpleSuneungData에서 유효한 등급만 추출
+      const validScores = [
+        simpleSuneungData.korean, 
+        simpleSuneungData.math, 
+        simpleSuneungData.english, 
+        simpleSuneungData.inquiry1, 
+        simpleSuneungData.inquiry2
+      ].filter(score => score > 0 && score <= 9); // 1-9등급 범위 확인
+      
+      console.log('수능 성적 데이터:', simpleSuneungData);
+      console.log('유효한 등급들:', validScores);
+      
+      if (validScores.length === 0) return 0;
+      
+      const average = validScores.reduce((sum, score) => sum + score, 0) / validScores.length;
+      console.log('평균 수능등급:', average);
+      
+      return Number(average.toFixed(2));
     }
     
     if (!grades) return 0;
