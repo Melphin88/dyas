@@ -138,15 +138,31 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
 
   const calculateSuneungAverage = (): number => {
     if (simpleSuneungData) {
-      // simpleSuneungData에서 유효한 등급만 추출
-      const validScores = [
-        simpleSuneungData.korean?.grade, 
-        simpleSuneungData.math?.grade, 
-        simpleSuneungData.english?.grade, 
-        simpleSuneungData.koreanHistory?.grade,
-        simpleSuneungData.inquiry1?.grade, 
-        simpleSuneungData.inquiry2?.grade
-      ].filter(score => score > 0 && score <= 9); // 1-9등급 범위 확인
+      // 새로운 구조인지 확인 (객체에 grade 속성이 있는지)
+      const isNewStructure = simpleSuneungData.korean && typeof simpleSuneungData.korean === 'object' && 'grade' in simpleSuneungData.korean;
+      
+      let validScores = [];
+      
+      if (isNewStructure) {
+        // 새로운 구조: { grade, standardScore, rawScore }
+        validScores = [
+          simpleSuneungData.korean?.grade, 
+          simpleSuneungData.math?.grade, 
+          simpleSuneungData.english?.grade, 
+          simpleSuneungData.koreanHistory?.grade,
+          simpleSuneungData.inquiry1?.grade, 
+          simpleSuneungData.inquiry2?.grade
+        ].filter(score => score > 0 && score <= 9);
+      } else {
+        // 이전 구조: 직접 숫자 값
+        validScores = [
+          simpleSuneungData.korean, 
+          simpleSuneungData.math, 
+          simpleSuneungData.english, 
+          simpleSuneungData.inquiry1, 
+          simpleSuneungData.inquiry2
+        ].filter(score => score > 0 && score <= 9);
+      }
       
       console.log('수능 성적 데이터:', simpleSuneungData);
       console.log('유효한 등급들:', validScores);
@@ -186,12 +202,36 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
           grade3: { semester1: {}, semester2: {} }
         },
         suneungGrades: {
-          korean: { grade: simpleSuneungData?.korean || 0, standardScore: 0, percentile: 0 },
-          math: { grade: simpleSuneungData?.math || 0, standardScore: 0, percentile: 0 },
-          english: { grade: simpleSuneungData?.english || 0, standardScore: 0, percentile: 0 },
-          koreanHistory: { grade: 0, standardScore: 0, percentile: 0 },
-          inquiry1: { grade: simpleSuneungData?.inquiry1 || 0, standardScore: 0, percentile: 0 },
-          inquiry2: { grade: simpleSuneungData?.inquiry2 || 0, standardScore: 0, percentile: 0 }
+          korean: { 
+            grade: simpleSuneungData?.korean?.grade || simpleSuneungData?.korean || 0, 
+            standardScore: simpleSuneungData?.korean?.standardScore || 0, 
+            percentile: 0 
+          },
+          math: { 
+            grade: simpleSuneungData?.math?.grade || simpleSuneungData?.math || 0, 
+            standardScore: simpleSuneungData?.math?.standardScore || 0, 
+            percentile: 0 
+          },
+          english: { 
+            grade: simpleSuneungData?.english?.grade || simpleSuneungData?.english || 0, 
+            standardScore: 0, 
+            percentile: 0 
+          },
+          koreanHistory: { 
+            grade: simpleSuneungData?.koreanHistory?.grade || 0, 
+            standardScore: 0, 
+            percentile: 0 
+          },
+          inquiry1: { 
+            grade: simpleSuneungData?.inquiry1?.grade || simpleSuneungData?.inquiry1 || 0, 
+            standardScore: simpleSuneungData?.inquiry1?.standardScore || 0, 
+            percentile: 0 
+          },
+          inquiry2: { 
+            grade: simpleSuneungData?.inquiry2?.grade || simpleSuneungData?.inquiry2 || 0, 
+            standardScore: simpleSuneungData?.inquiry2?.standardScore || 0, 
+            percentile: 0 
+          }
         },
         preferredUniversities: [],
         preferredMajors: [],
@@ -301,13 +341,29 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
 
   const getSuneungSubjectData = () => {
     if (simpleSuneungData) {
-      return [
-        { subject: '국어', grade: simpleSuneungData.korean, percentile: 0 },
-        { subject: '수학', grade: simpleSuneungData.math, percentile: 0 },
-        { subject: '영어', grade: simpleSuneungData.english, percentile: 0 },
-        { subject: '탐구1', grade: simpleSuneungData.inquiry1, percentile: 0 },
-        { subject: '탐구2', grade: simpleSuneungData.inquiry2, percentile: 0 }
-      ].filter(item => item.grade > 0);
+      // 새로운 구조인지 확인
+      const isNewStructure = simpleSuneungData.korean && typeof simpleSuneungData.korean === 'object' && 'grade' in simpleSuneungData.korean;
+      
+      if (isNewStructure) {
+        // 새로운 구조: { grade, standardScore, rawScore }
+        return [
+          { subject: '국어', grade: simpleSuneungData.korean?.grade || 0, percentile: 0 },
+          { subject: '수학', grade: simpleSuneungData.math?.grade || 0, percentile: 0 },
+          { subject: '영어', grade: simpleSuneungData.english?.grade || 0, percentile: 0 },
+          { subject: '한국사', grade: simpleSuneungData.koreanHistory?.grade || 0, percentile: 0 },
+          { subject: '탐구1', grade: simpleSuneungData.inquiry1?.grade || 0, percentile: 0 },
+          { subject: '탐구2', grade: simpleSuneungData.inquiry2?.grade || 0, percentile: 0 }
+        ].filter(item => item.grade > 0);
+      } else {
+        // 이전 구조: 직접 숫자 값
+        return [
+          { subject: '국어', grade: simpleSuneungData.korean || 0, percentile: 0 },
+          { subject: '수학', grade: simpleSuneungData.math || 0, percentile: 0 },
+          { subject: '영어', grade: simpleSuneungData.english || 0, percentile: 0 },
+          { subject: '탐구1', grade: simpleSuneungData.inquiry1 || 0, percentile: 0 },
+          { subject: '탐구2', grade: simpleSuneungData.inquiry2 || 0, percentile: 0 }
+        ].filter(item => item.grade > 0);
+      }
     }
     
     if (!grades) return [];
