@@ -6,10 +6,8 @@ import { RegisterForm } from './components/RegisterForm';
 import { AdminPanel } from './components/AdminPanel';
 import { GradeInput } from './components/GradeInput';
 import { SuneungInput } from './components/SuneungInput';
-import { UniversityRecommendations } from './components/UniversityRecommendations';
 import { AnalysisReport } from './components/AnalysisReport';
 import { PrintReport } from './components/PrintReport';
-import { DataViewer } from './components/DataViewer';
 import { SimpleGradeData, SimpleSuneungData } from './types/university';
 import { supabase } from './utils/supabase/client';
 
@@ -60,7 +58,7 @@ interface GradeData {
 
 function App() {
   // 기본 상태들
-  const [currentView, setCurrentView] = useState<'login' | 'register' | 'admin' | 'grade' | 'suneung' | 'recommendations' | 'report' | 'print' | 'data'>('login');
+  const [currentView, setCurrentView] = useState<'login' | 'register' | 'admin' | 'grade' | 'suneung' | 'report' | 'print'>('login');
   const [currentUser, setCurrentUser] = useState<Account | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   
@@ -366,16 +364,6 @@ function App() {
               수능 성적 입력
             </button>
             <button
-              onClick={() => setCurrentView('recommendations')}
-              className={`pb-2 border-b-2 transition-colors ${
-                currentView === 'recommendations'
-                  ? 'border-gold-500 text-gold-600'
-                  : 'border-transparent text-navy-600 hover:text-navy-800'
-              }`}
-            >
-              대학 추천
-            </button>
-            <button
               onClick={() => setCurrentView('report')}
               className={`pb-2 border-b-2 transition-colors ${
                 currentView === 'report'
@@ -394,16 +382,6 @@ function App() {
               }`}
             >
               인쇄용 보고서
-            </button>
-            <button
-              onClick={() => setCurrentView('data')}
-              className={`pb-2 border-b-2 transition-colors ${
-                currentView === 'data'
-                  ? 'border-gold-500 text-gold-600'
-                  : 'border-transparent text-navy-600 hover:text-navy-800'
-              }`}
-            >
-              데이터 뷰어
             </button>
           </div>
         </div>
@@ -479,19 +457,10 @@ function App() {
             initialData={simpleSuneungData}
             onSave={handleSaveSimpleSuneung}
             onBack={() => setCurrentView('grade')}
-            onViewResults={() => setCurrentView('recommendations')}
+            onViewResults={() => setCurrentView('report')}
           />
         )}
 
-        {currentView === 'recommendations' && (
-          <UniversityRecommendations
-            gradeData={simpleGradeData}
-            suneungData={simpleSuneungData}
-            onBack={() => setCurrentView('suneung')}
-            onViewReport={() => setCurrentView('report')}
-            onViewPrintReport={() => handleViewPrintReport()}
-          />
-        )}
 
         {currentView === 'report' && currentUser && (
           <AnalysisReport
@@ -500,7 +469,7 @@ function App() {
             grades={studentGrades[currentUser.id]}
             simpleGradeData={simpleGradeData}
             simpleSuneungData={simpleSuneungData}
-            onBack={() => setCurrentView('recommendations')}
+            onBack={() => setCurrentView('suneung')}
           />
         )}
 
@@ -514,15 +483,12 @@ function App() {
               if (isAdmin) {
                 setCurrentView('admin');
               } else {
-                setCurrentView('recommendations');
+                setCurrentView('report');
               }
             }}
           />
         )}
 
-        {currentView === 'data' && (
-          <DataViewer />
-        )}
       </div>
     </div>
   );
