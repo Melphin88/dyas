@@ -189,6 +189,8 @@ const createEmptyGradeData = (): GradeData => ({
 });
 
 export function GradeInput({ studentId, studentName, initialGrades, onSubmit, onSaveSimpleGrade, onSaveSimpleSuneung, initialSimpleGrades, initialSimpleSuneung, onBack }: GradeInputProps) {
+  console.log('GradeInput 렌더링:', { studentId, studentName, initialGrades, initialSimpleGrades, initialSimpleSuneung });
+  
   const [grades, setGrades] = useState<GradeData>(initialGrades || createEmptyGradeData());
   const [activeMainTab, setActiveMainTab] = useState('simple'); // 간단 입력을 기본으로
   const [activeGradeTab, setActiveGradeTab] = useState('grade1');
