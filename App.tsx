@@ -20,6 +20,16 @@ interface Account {
   password: string;
 }
 
+// Supabase 계정 정보 인터페이스
+interface SupabaseAccount {
+  id: string;
+  username: string;
+  name: string;
+  password: string;
+  is_admin: boolean;
+  created_at: string;
+}
+
 // 내신 성적 데이터 구조 (기존 구조)
 interface GradeData {
   personalInfo: {
@@ -58,6 +68,10 @@ function App() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [studentGrades, setStudentGrades] = useState<{[key: string]: GradeData}>({});
   
+  // Supabase 계정 목록
+  const [supabaseAccounts, setSupabaseAccounts] = useState<SupabaseAccount[]>([]);
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
+  
   // 새로운 간단한 성적 데이터 (Supabase 연동)
   const [simpleGradeData, setSimpleGradeData] = useState<SimpleGradeData | null>(null);
   const [simpleSuneungData, setSimpleSuneungData] = useState<SimpleSuneungData | null>(null);
@@ -71,6 +85,7 @@ function App() {
     loadAccounts();
     loadStudentGrades();
     loadLocalSimpleGrades(); // 로컬 간단 성적 로드 추가
+    loadSupabaseAccounts(); // Supabase 계정 목록 로드 추가
   }, []);
 
   // 로컬 저장된 간단 성적 로드
@@ -109,6 +124,29 @@ function App() {
       ];
       setAccounts(defaultAccounts);
       localStorage.setItem('universityApp_accounts', JSON.stringify(defaultAccounts));
+    }
+  };
+
+  // Supabase에서 계정 목록 로드
+  const loadSupabaseAccounts = async () => {
+    setLoadingAccounts(true);
+    try {
+      const { data, error } = await supabase
+        .from('accounts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Supabase 계정 목록 로드 오류:', error);
+        return;
+      }
+
+      console.log('Supabase 계정 목록:', data);
+      setSupabaseAccounts(data || []);
+    } catch (error) {
+      console.error('Supabase 계정 목록 로드 오류:', error);
+    } finally {
+      setLoadingAccounts(false);
     }
   };
 
@@ -164,6 +202,9 @@ function App() {
       const newAccounts = [...accounts, account];
       setAccounts(newAccounts);
       localStorage.setItem('universityApp_accounts', JSON.stringify(newAccounts));
+      
+      // Supabase 계정 목록 새로고침
+      loadSupabaseAccounts();
     } catch (error) {
       console.error('계정 추가 오류:', error);
     }
@@ -194,6 +235,9 @@ function App() {
       delete newGrades[id];
       setStudentGrades(newGrades);
       localStorage.setItem('universityApp_studentGrades', JSON.stringify(newGrades));
+      
+      // Supabase 계정 목록 새로고침
+      loadSupabaseAccounts();
     } catch (error) {
       console.error('계정 삭제 오류:', error);
     }
@@ -400,7 +444,7 @@ function App() {
           <div>
             <DevelopmentModeAlert />
             <AdminPanel
-              accounts={accounts}
+              accounts={supabaseAccounts}
               studentGrades={studentGrades}
               onAddAccount={handleAddAccount}
               onDeleteAccount={handleDeleteAccount}
