@@ -234,10 +234,12 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
           }
         },
         preferredUniversities: [],
-        preferredMajors: [],
+        preferredMajors: ['컴퓨터', '공학', '정보'], // 기본 지망학과 설정
         preferredRegions: []
       };
 
+      console.log('전송할 학생 데이터:', JSON.stringify(studentData, null, 2));
+      
       const response = await fetch(`https://kgbcqvvkahugbrqlomjc.supabase.co/functions/v1/calculate-recommendations`, {
         method: 'POST',
         headers: {
