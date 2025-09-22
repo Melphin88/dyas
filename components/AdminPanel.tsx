@@ -154,6 +154,9 @@ const [totalPages, setTotalPages] = useState(1);
 const [headers, setHeaders] = useState<string[]>([]);
 const [totalCount, setTotalCount] = useState(0);
 
+  // 계산 로직 디버깅 관련 상태
+  const [testResults, setTestResults] = useState<any>(null);
+
   // 컴포넌트 마운트 시 CSV 파일 목록 로드 (개발 모드가 아닐 때만)
   useEffect(() => {
     if (isAuthenticated && !isDevelopmentMode()) {
@@ -217,7 +220,7 @@ const [totalCount, setTotalCount] = useState(0);
         }
       }
     } catch (error) {
-      console.error(`${type} CSV ��일 목록 로드 오류:`, error);
+      console.error(`${type} CSV 파일 목록 로드 오류:`, error);
       setUploadError(prev => ({...prev, [type]: `파일 목록 로드 실패: ${error.message}`}));
       // 빈 배열로 설정하여 에러 방지
       if (type === 'susi') {
@@ -1140,6 +1143,93 @@ const handlePageChange = (page: number) => {
     }
   };
 
+  // 계산 로직 테스트 함수
+  const handleTestLogic = async () => {
+    try {
+      // 테스트용 학생 데이터 생성
+      const testStudentData = {
+        name: "테스트 학생",
+        schoolType: "일반고" as const,
+        schoolGrades: {
+          grade1: { semester1: {}, semester2: {} },
+          grade2: { semester1: {}, semester2: {} },
+          grade3: { semester1: {}, semester2: {} }
+        },
+        suneungGrades: {
+          korean: { grade: 3, standardScore: 120, percentile: 85 },
+          math: { grade: 2, standardScore: 130, percentile: 90 },
+          english: { grade: 4, standardScore: 110, percentile: 80 },
+          koreanHistory: { grade: 3, standardScore: 115, percentile: 82 },
+          inquiry1: { grade: 2, standardScore: 125, percentile: 88 },
+          inquiry2: { grade: 3, standardScore: 118, percentile: 83 }
+        },
+        preferredUniversities: ["서울대학교", "연세대학교"],
+        preferredMajors: ["컴퓨터공학과", "경영학과"],
+        preferredRegions: ["서울", "경기"]
+      };
+
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/calculate-recommendations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${publicAnonKey}`
+        },
+        body: JSON.stringify({
+          studentData: testStudentData,
+          debugMode: true
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setTestResults(result);
+        console.log('테스트 결과:', result);
+      } else {
+        const error = await response.json();
+        console.error('테스트 실패:', error);
+        setTestResults({ error: error.message || '테스트 실패' });
+      }
+    } catch (error) {
+      console.error('테스트 오류:', error);
+      setTestResults({ error: error.message || '테스트 오류' });
+    }
+  };
+
+  // 데이터베이스 상태 확인 함수
+  const handleCheckDatabase = async () => {
+    try {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/calculate-recommendations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${publicAnonKey}`
+        },
+        body: JSON.stringify({
+          studentData: {
+            name: "DB 체크",
+            schoolType: "일반고",
+            schoolGrades: { grade1: { semester1: {}, semester2: {} }, grade2: { semester1: {}, semester2: {} }, grade3: { semester1: {}, semester2: {} } },
+            suneungGrades: { korean: { grade: 0, standardScore: 0, percentile: 0 }, math: { grade: 0, standardScore: 0, percentile: 0 }, english: { grade: 0, standardScore: 0, percentile: 0 }, koreanHistory: { grade: 0, standardScore: 0, percentile: 0 }, inquiry1: { grade: 0, standardScore: 0, percentile: 0 }, inquiry2: { grade: 0, standardScore: 0, percentile: 0 } }
+          },
+          debugMode: true
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setTestResults(result.debugInfo);
+        console.log('DB 상태:', result.debugInfo);
+      } else {
+        const error = await response.json();
+        console.error('DB 체크 실패:', error);
+        setTestResults({ error: error.message || 'DB 체크 실패' });
+      }
+    } catch (error) {
+      console.error('DB 체크 오류:', error);
+      setTestResults({ error: error.message || 'DB 체크 오류' });
+    }
+  };
+
   const renderSchoolGradeEditForm = () => {
     if (!editingGrades) return null;
 
@@ -1381,9 +1471,10 @@ const handlePageChange = (page: number) => {
         </div>
 
         <Tabs defaultValue="accounts" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="accounts">학생 계정 관리</TabsTrigger>
             <TabsTrigger value="university-data">대학 데이터 관리</TabsTrigger>
+            <TabsTrigger value="logic-debug">계산 로직 디버깅</TabsTrigger>
           </TabsList>
 
           {/* 학생 계정 관리 탭 */}
@@ -1586,6 +1677,107 @@ const handlePageChange = (page: number) => {
                 {renderCSVFileSection('jeongsi')}
               </TabsContent>
             </Tabs>
+          </TabsContent>
+
+          {/* 계산 로직 디버깅 탭 */}
+          <TabsContent value="logic-debug">
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-navy-800">계산 로직 디버깅</CardTitle>
+                <p className="text-navy-600 text-sm">
+                  대학 추천 시스템의 계산 로직을 테스트하고 모니터링할 수 있습니다.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* 테스트 섹션 */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-navy-800">로직 테스트</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Button 
+                        onClick={handleTestLogic}
+                        className="bg-gold-600 hover:bg-gold-700"
+                      >
+                        <Database className="w-4 h-4 mr-2" />
+                        계산 로직 테스트
+                      </Button>
+                      <Button 
+                        onClick={handleCheckDatabase}
+                        variant="outline"
+                        className="border-navy-300 text-navy-700 hover:bg-navy-50"
+                      >
+                        <FileText className="w-4 h-4 mr-2" />
+                        데이터베이스 상태 확인
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* 현재 로직 정보 */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-navy-800">현재 적용된 로직</h3>
+                    <div className="bg-navy-50 p-4 rounded-lg">
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-navy-700">수시 계산 방식:</span>
+                          <span className="text-navy-900">내신 등급 기반 + 학교 유형 가중치</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-navy-700">정시 계산 방식:</span>
+                          <span className="text-navy-900">수능 등급 기반 + 과목별 가중치</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-navy-700">특목고 가중치:</span>
+                          <span className="text-navy-900">1.2배</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-navy-700">자사고 가중치:</span>
+                          <span className="text-navy-900">1.1배</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-navy-700">국제고 가중치:</span>
+                          <span className="text-navy-900">1.15배</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 데이터베이스 상태 */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-navy-800">데이터베이스 상태</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Card className="p-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-navy-700">수시 데이터</span>
+                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                            {susiFiles.length}개 파일
+                          </Badge>
+                        </div>
+                      </Card>
+                      <Card className="p-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-navy-700">정시 데이터</span>
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                            {jeongsiFiles.length}개 파일
+                          </Badge>
+                        </div>
+                      </Card>
+                    </div>
+                  </div>
+
+                  {/* 테스트 결과 */}
+                  {testResults && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-navy-800">테스트 결과</h3>
+                      <div className="bg-navy-50 p-4 rounded-lg">
+                        <pre className="text-sm text-navy-700 whitespace-pre-wrap">
+                          {JSON.stringify(testResults, null, 2)}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 
