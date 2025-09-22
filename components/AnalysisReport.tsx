@@ -246,12 +246,14 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         },
         body: JSON.stringify({
           studentData,
-          debugMode: false
+          debugMode: true
         })
       });
 
       if (response.ok) {
         const result = await response.json();
+        console.log('추천 결과:', result);
+        console.log('디버그 정보:', result.debugInfo);
         setRecommendations(result.recommendations || []);
       } else {
         console.error('추천 결과 가져오기 실패');
