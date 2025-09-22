@@ -37,21 +37,21 @@ interface DetailedUniversity extends University {
   };
 }
 
-// 반영비율 분석 함수
+// 반영비율 분석 ?�수
 const calculateBestReflectionRatio = (grades: GradeData, type: 'school' | 'suneung') => {
   if (type === 'school') {
-    const subjects = ['국어', '영어', '수학', '사회', '과학'];
+    const subjects = ['�?��', '?�어', '?�학', '?�회', '과학'];
     const subjectAverages = subjects.map(subject => {
       let total = 0;
       let count = 0;
       
-      // 1학년
+      // 1?�년
       const grade1S1 = grades.school.grade1.semester1[subject];
       const grade1S2 = grades.school.grade1.semester2[subject];
       if (grade1S1?.grade) { total += grade1S1.grade; count++; }
       if (grade1S2?.grade) { total += grade1S2.grade; count++; }
       
-      // 2,3학년 (1,2,3으로 분류된 것들)
+      // 2,3?�년 (1,2,3?�로 분류??것들)
       [1, 2, 3].forEach(num => {
         const subjectName = `${subject}${num}`;
         const grade2S1 = grades.school.grade2.semester1[subjectName];
@@ -71,29 +71,29 @@ const calculateBestReflectionRatio = (grades: GradeData, type: 'school' | 'suneu
       };
     });
     
-    // 성적이 좋은 순으로 정렬
+    // ?�적??좋�? ?�으�??�렬
     subjectAverages.sort((a, b) => a.average - b.average);
     return `${subjectAverages[0].subject}(${subjectAverages[0].average}) > ${subjectAverages[1].subject}(${subjectAverages[1].average}) > ${subjectAverages[2].subject}(${subjectAverages[2].average})`;
   } else {
     const subjects = [
-      { name: '국어', grade: grades.suneung.korean.grade },
-      { name: '수학', grade: grades.suneung.math.grade },
-      { name: '영어', grade: grades.suneung.english.grade },
-      { name: '사회', grade: Math.min(grades.suneung.inquiry1.grade, grades.suneung.inquiry2.grade) },
+      { name: '�?��', grade: grades.suneung.korean.grade },
+      { name: '?�학', grade: grades.suneung.math.grade },
+      { name: '?�어', grade: grades.suneung.english.grade },
+      { name: '?�회', grade: Math.min(grades.suneung.inquiry1.grade, grades.suneung.inquiry2.grade) },
       { name: '과학', grade: Math.min(grades.suneung.inquiry1.grade, grades.suneung.inquiry2.grade) }
     ];
     
     const validSubjects = subjects.filter(s => s.grade > 0).sort((a, b) => a.grade - b.grade);
-    return validSubjects.slice(0, 3).map(s => `${s.name}(${s.grade}등급)`).join(' > ');
+    return validSubjects.slice(0, 3).map(s => `${s.name}(${s.grade}?�급)`).join(' > ');
   }
 };
 
-// 합격 가능성에 따른 색상 결정
+// ?�격 가?�성???�른 ?�상 결정
 const getAdmissionProbabilityColor = (matchPercentage: number) => {
-  if (matchPercentage >= 80) return 'bg-green-600'; // 진한녹색 - 합격률 80% 이상
-  if (matchPercentage >= 50) return 'bg-green-300'; // 연한녹색 - 합격률 50-79%
-  if (matchPercentage >= 20) return 'bg-yellow-400'; // 노랑색 - 합격률 20-49%
-  return 'bg-red-500'; // 붉은색 - 합격률 20% 미만
+  if (matchPercentage >= 80) return 'bg-green-600'; // 진한?�색 - ?�격�?80% ?�상
+  if (matchPercentage >= 50) return 'bg-green-300'; // ?�한?�색 - ?�격�?50-79%
+  if (matchPercentage >= 20) return 'bg-yellow-400'; // ?�랑??- ?�격�?20-49%
+  return 'bg-red-500'; // 붉�???- ?�격�?20% 미만
 };
 
 export function AnalysisReport({ studentId, studentName, grades, simpleGradeData, simpleSuneungData, onBack }: AnalysisReportProps) {
@@ -104,16 +104,16 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
   const [loading, setLoading] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
-  // 추천 결과 가져오기
+  // 추천 결과 가?�오�?
   const fetchRecommendations = async () => {
     setLoading(true);
     try {
-      // 학생 데이터 구성
+      // ?�생 ?�이??구성
       const studentData = {
-        name: studentName || "학생",
-        schoolType: grades?.personalInfo?.schoolType === '특목고' ? '특목고' : 
-                   grades?.personalInfo?.schoolType === '자사고' ? '자사고' :
-                   grades?.personalInfo?.schoolType === '국제고' ? '국제고' : '일반고',
+        name: studentName || "?�생",
+        schoolType: grades?.personalInfo?.schoolType === '?�목�? ? '?�목�? : 
+                   grades?.personalInfo?.schoolType === '?�사�? ? '?�사�? :
+                   grades?.personalInfo?.schoolType === '�?���? ? '�?���? : '?�반�?,
         schoolGrades: grades?.school || {
           grade1: { semester1: {}, semester2: {} },
           grade2: { semester1: {}, semester2: {} },
@@ -148,18 +148,18 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         const result = await response.json();
         setRecommendations(result.recommendations || []);
       } else {
-        console.error('추천 결과 가져오기 실패');
+        console.error('추천 결과 가?�오�??�패');
         setRecommendations([]);
       }
     } catch (error) {
-      console.error('추천 결과 가져오기 오류:', error);
+      console.error('추천 결과 가?�오�??�류:', error);
       setRecommendations([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // 컴포넌트 마운트 시 추천 결과 가져오기
+  // 컴포?�트 마운????추천 결과 가?�오�?
   React.useEffect(() => {
     if (simpleGradeData || simpleSuneungData) {
       fetchRecommendations();
@@ -200,22 +200,22 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
 
   const calculateSuneungAverage = (): number => {
     if (simpleSuneungData) {
-      // simpleSuneungData에서 유효한 등급만 추출
+      // simpleSuneungData?�서 ?�효???�급�?추출
       const validScores = [
         simpleSuneungData.korean, 
         simpleSuneungData.math, 
         simpleSuneungData.english, 
         simpleSuneungData.inquiry1, 
         simpleSuneungData.inquiry2
-      ].filter(score => score > 0 && score <= 9); // 1-9등급 범위 확인
+      ].filter(score => score > 0 && score <= 9); // 1-9?�급 범위 ?�인
       
-      console.log('수능 성적 데이터:', simpleSuneungData);
-      console.log('유효한 등급들:', validScores);
+      console.log('?�능 ?�적 ?�이??', simpleSuneungData);
+      console.log('?�효???�급??', validScores);
       
       if (validScores.length === 0) return 0;
       
       const average = validScores.reduce((sum, score) => sum + score, 0) / validScores.length;
-      console.log('평균 수능등급:', average);
+      console.log('?�균 ?�능?�급:', average);
       
       return Number(average.toFixed(2));
     }
@@ -248,8 +248,8 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
     
     const subjectTotals: { [key: string]: { total: number; count: number } } = {};
     
-    // 1학년 과목들
-    ['국어', '영어', '수학', '사회', '과학'].forEach(subject => {
+    // 1?�년 과목??
+    ['�?��', '?�어', '?�학', '?�회', '과학'].forEach(subject => {
       const grade1S1 = grades.school.grade1.semester1[subject];
       const grade1S2 = grades.school.grade1.semester2[subject];
       
@@ -264,8 +264,8 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
       }
     });
 
-    // 2,3학년 과목들 (1,2,3으로 분류된 것들)
-    ['국어', '영어', '수학', '사회', '과학'].forEach(baseSubject => {
+    // 2,3?�년 과목??(1,2,3?�로 분류??것들)
+    ['�?��', '?�어', '?�학', '?�회', '과학'].forEach(baseSubject => {
       [1, 2, 3].forEach(num => {
         const subject = `${baseSubject}${num}`;
         const grade2S1 = grades.school.grade2.semester1[subject];
@@ -294,31 +294,31 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
     return Object.entries(subjectTotals).map(([subject, data]) => ({
       subject,
       average: Number((data.total / data.count).toFixed(2)),
-      nationalAverage: Math.random() * 2 + 2 // 모의 전국 평균
+      nationalAverage: Math.random() * 2 + 2 // 모의 ?�국 ?�균
     }));
   };
 
   const getSuneungSubjectData = () => {
     if (simpleSuneungData) {
       return [
-        { subject: '국어', grade: simpleSuneungData.korean, percentile: 0 },
-        { subject: '수학', grade: simpleSuneungData.math, percentile: 0 },
-        { subject: '영어', grade: simpleSuneungData.english, percentile: 0 },
-        { subject: '탐구1', grade: simpleSuneungData.inquiry1, percentile: 0 },
-        { subject: '탐구2', grade: simpleSuneungData.inquiry2, percentile: 0 }
+        { subject: '�?��', grade: simpleSuneungData.korean, percentile: 0 },
+        { subject: '?�학', grade: simpleSuneungData.math, percentile: 0 },
+        { subject: '?�어', grade: simpleSuneungData.english, percentile: 0 },
+        { subject: '?�구1', grade: simpleSuneungData.inquiry1, percentile: 0 },
+        { subject: '?�구2', grade: simpleSuneungData.inquiry2, percentile: 0 }
       ].filter(item => item.grade > 0);
     }
     
     if (!grades) return [];
     
     const subjects = [
-      { subject: '국어', grade: grades.suneung.korean.grade, percentile: grades.suneung.korean.percentile },
-      { subject: '수학', grade: grades.suneung.math.grade, percentile: grades.suneung.math.percentile },
-      { subject: '영어', grade: grades.suneung.english.grade, percentile: grades.suneung.english.percentile },
-      { subject: '한국사', grade: grades.suneung.koreanHistory.grade, percentile: grades.suneung.koreanHistory.percentile },
-      { subject: '탐구1', grade: grades.suneung.inquiry1.grade, percentile: grades.suneung.inquiry1.percentile },
-      { subject: '탐구2', grade: grades.suneung.inquiry2.grade, percentile: grades.suneung.inquiry2.percentile },
-      { subject: '제2외국어', grade: grades.suneung.secondLanguage.grade, percentile: grades.suneung.secondLanguage.percentile }
+      { subject: '�?��', grade: grades.suneung.korean.grade, percentile: grades.suneung.korean.percentile },
+      { subject: '?�학', grade: grades.suneung.math.grade, percentile: grades.suneung.math.percentile },
+      { subject: '?�어', grade: grades.suneung.english.grade, percentile: grades.suneung.english.percentile },
+      { subject: '?�국??, grade: grades.suneung.koreanHistory.grade, percentile: grades.suneung.koreanHistory.percentile },
+      { subject: '?�구1', grade: grades.suneung.inquiry1.grade, percentile: grades.suneung.inquiry1.percentile },
+      { subject: '?�구2', grade: grades.suneung.inquiry2.grade, percentile: grades.suneung.inquiry2.percentile },
+      { subject: '???�국??, grade: grades.suneung.secondLanguage.grade, percentile: grades.suneung.secondLanguage.percentile }
     ];
 
     return subjects.filter(item => item.grade > 0);
@@ -329,34 +329,34 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
   const schoolSubjectAverages = getSchoolSubjectAverages();
   const suneungSubjectData = getSuneungSubjectData();
 
-  // 유리한 반영비율 계산
-  const schoolBestRatio = grades ? calculateBestReflectionRatio(grades, 'school') : '분석 데이터 부족';
-  const suneungBestRatio = grades ? calculateBestReflectionRatio(grades, 'suneung') : '분석 데이터 부족';
+  // ?�리??반영비율 계산
+  const schoolBestRatio = grades ? calculateBestReflectionRatio(grades, 'school') : '분석 ?�이??부�?;
+  const suneungBestRatio = grades ? calculateBestReflectionRatio(grades, 'suneung') : '분석 ?�이??부�?;
 
-  // 실제 추천 결과에서 수시 대학 데이터 추출
+  // ?�제 추천 결과?�서 ?�시 ?�???�이??추출
   const susiUniversities: DetailedUniversity[] = recommendations 
     ? recommendations
-        .filter((rec: any) => rec.admissionType === '수시' || rec.admissionType?.includes('수시'))
+        .filter((rec: any) => rec.admissionType === '?�시' || rec.admissionType?.includes('?�시'))
         .slice(0, 20)
         .map((rec: any) => ({
           name: rec.university,
           department: rec.department,
-          admissionType: '수시',
+      admissionType: '?�시',
           competitionRate: rec.cutOffData?.competitionRate || 0,
           requiredGrade: rec.cutOffData?.grade50 || 0,
           matchPercentage: rec.probabilityScore,
-          location: '지역 정보 없음',
+          location: '지???�보 ?�음',
           description: `${rec.university} ${rec.department} - ${rec.probability} 추천`,
-          requirements: {
+      requirements: {
             minInternalGrade: rec.cutOffData?.grade50,
             requiredSubjects: [],
             additionalFactors: rec.reasons || []
           },
-          admissionStrategy: rec.reasons?.join(', ') || '추천 이유 없음',
-          competitionAnalysis: `경쟁률 ${rec.cutOffData?.competitionRate || 0}:1`,
-          recommendation: rec.probability === '안정' ? 'safe' : rec.probability === '적정' ? 'optimal' : 'challenge',
-          reflectionRatio: '반영비율 정보 없음',
-          admissionData: {
+          admissionStrategy: rec.reasons?.join(', ') || '추천 ?�유 ?�음',
+          competitionAnalysis: `경쟁�?${rec.cutOffData?.competitionRate || 0}:1`,
+          recommendation: rec.probability === '?�정' ? 'safe' : rec.probability === '?�정' ? 'optimal' : 'challenge',
+          reflectionRatio: '반영비율 ?�보 ?�음',
+      admissionData: {
             lastYear: { score: rec.cutOffData?.grade50 || 0, students: 0 },
             threeYearAvg: { score: rec.cutOffData?.grade50 || 0, students: 0 },
             yearlyData: []
@@ -364,33 +364,33 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         }))
     : [];
 
-  // 실제 추천 결과에서 정시 대학 데이터 추출
+  // ?�제 추천 결과?�서 ?�시 ?�???�이??추출
   const jungsiRecommendations = recommendations 
-    ? recommendations.filter((rec: any) => rec.admissionType === '정시' || rec.admissionType?.includes('정시'))
+    ? recommendations.filter((rec: any) => rec.admissionType === '?�시' || rec.admissionType?.includes('?�시'))
     : [];
 
   const jungsiUniversities = {
     ga: jungsiRecommendations
-      .filter((rec: any) => rec.admissionType?.includes('가군') || rec.admissionType === '정시')
+      .filter((rec: any) => rec.admissionType?.includes('가�?) || rec.admissionType === '?�시')
       .slice(0, 6)
       .map((rec: any) => ({
         name: rec.university,
         department: rec.department,
-        admissionType: '정시 가군',
+        admissionType: '?�시 가�?,
         competitionRate: rec.cutOffData?.competitionRate || 0,
         requiredGrade: rec.cutOffData?.grade50 || 0,
         matchPercentage: rec.probabilityScore,
-        location: '지역 정보 없음',
+        location: '지???�보 ?�음',
         description: `${rec.university} ${rec.department} - ${rec.probability} 추천`,
         requirements: {
           minSuneungGrade: rec.cutOffData?.grade50,
           requiredSubjects: [],
           additionalFactors: rec.reasons || []
         },
-        admissionStrategy: rec.reasons?.join(', ') || '추천 이유 없음',
-        competitionAnalysis: `경쟁률 ${rec.cutOffData?.competitionRate || 0}:1`,
-        recommendation: rec.probability === '안정' ? 'safe' : rec.probability === '적정' ? 'optimal' : 'challenge',
-        reflectionRatio: '반영비율 정보 없음',
+        admissionStrategy: rec.reasons?.join(', ') || '추천 ?�유 ?�음',
+        competitionAnalysis: `경쟁�?${rec.cutOffData?.competitionRate || 0}:1`,
+        recommendation: rec.probability === '?�정' ? 'safe' : rec.probability === '?�정' ? 'optimal' : 'challenge',
+        reflectionRatio: '반영비율 ?�보 ?�음',
         admissionData: {
           lastYear: { score: rec.cutOffData?.grade50 || 0, students: 0 },
           threeYearAvg: { score: rec.cutOffData?.grade50 || 0, students: 0 },
@@ -398,26 +398,26 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         }
       } as DetailedUniversity),
     na: jungsiRecommendations
-      .filter((rec: any) => rec.admissionType?.includes('나군'))
+      .filter((rec: any) => rec.admissionType?.includes('?�군'))
       .slice(0, 6)
       .map((rec: any) => ({
         name: rec.university,
         department: rec.department,
-        admissionType: '정시 나군',
+        admissionType: '?�시 ?�군',
         competitionRate: rec.cutOffData?.competitionRate || 0,
         requiredGrade: rec.cutOffData?.grade50 || 0,
         matchPercentage: rec.probabilityScore,
-        location: '지역 정보 없음',
+        location: '지???�보 ?�음',
         description: `${rec.university} ${rec.department} - ${rec.probability} 추천`,
         requirements: {
           minSuneungGrade: rec.cutOffData?.grade50,
           requiredSubjects: [],
           additionalFactors: rec.reasons || []
         },
-        admissionStrategy: rec.reasons?.join(', ') || '추천 이유 없음',
-        competitionAnalysis: `경쟁률 ${rec.cutOffData?.competitionRate || 0}:1`,
-        recommendation: rec.probability === '안정' ? 'safe' : rec.probability === '적정' ? 'optimal' : 'challenge',
-        reflectionRatio: '반영비율 정보 없음',
+        admissionStrategy: rec.reasons?.join(', ') || '추천 ?�유 ?�음',
+        competitionAnalysis: `경쟁�?${rec.cutOffData?.competitionRate || 0}:1`,
+        recommendation: rec.probability === '?�정' ? 'safe' : rec.probability === '?�정' ? 'optimal' : 'challenge',
+        reflectionRatio: '반영비율 ?�보 ?�음',
         admissionData: {
           lastYear: { score: rec.cutOffData?.grade50 || 0, students: 0 },
           threeYearAvg: { score: rec.cutOffData?.grade50 || 0, students: 0 },
@@ -425,26 +425,26 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         }
       } as DetailedUniversity),
     da: jungsiRecommendations
-      .filter((rec: any) => rec.admissionType?.includes('다군'))
+      .filter((rec: any) => rec.admissionType?.includes('?�군'))
       .slice(0, 6)
       .map((rec: any) => ({
         name: rec.university,
         department: rec.department,
-        admissionType: '정시 다군',
+        admissionType: '?�시 ?�군',
         competitionRate: rec.cutOffData?.competitionRate || 0,
         requiredGrade: rec.cutOffData?.grade50 || 0,
         matchPercentage: rec.probabilityScore,
-        location: '지역 정보 없음',
+        location: '지???�보 ?�음',
         description: `${rec.university} ${rec.department} - ${rec.probability} 추천`,
         requirements: {
           minSuneungGrade: rec.cutOffData?.grade50,
           requiredSubjects: [],
           additionalFactors: rec.reasons || []
         },
-        admissionStrategy: rec.reasons?.join(', ') || '추천 이유 없음',
-        competitionAnalysis: `경쟁률 ${rec.cutOffData?.competitionRate || 0}:1`,
-        recommendation: rec.probability === '안정' ? 'safe' : rec.probability === '적정' ? 'optimal' : 'challenge',
-        reflectionRatio: '반영비율 정보 없음',
+        admissionStrategy: rec.reasons?.join(', ') || '추천 ?�유 ?�음',
+        competitionAnalysis: `경쟁�?${rec.cutOffData?.competitionRate || 0}:1`,
+        recommendation: rec.probability === '?�정' ? 'safe' : rec.probability === '?�정' ? 'optimal' : 'challenge',
+        reflectionRatio: '반영비율 ?�보 ?�음',
         admissionData: {
           lastYear: { score: rec.cutOffData?.grade50 || 0, students: 0 },
           threeYearAvg: { score: rec.cutOffData?.grade50 || 0, students: 0 },
@@ -460,42 +460,42 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
     }));
   };
 
-  // 개인정보 표시 섹션
+  // 개인?�보 ?�시 ?�션
   const renderPersonalInfo = () => (
     <Card className="shadow-lg border-navy-200 mb-6">
       <CardHeader className="bg-navy-50">
         <CardTitle className="text-navy-800 flex items-center gap-2">
           <User className="w-5 h-5" />
-          학생 정보
+          ?�생 ?�보
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
-            <span className="text-navy-600">이름:</span>
-            <span className="ml-2 text-navy-900">{grades?.personalInfo?.name || '미입력'}</span>
+            <span className="text-navy-600">?�름:</span>
+            <span className="ml-2 text-navy-900">{grades?.personalInfo?.name || '미입??}</span>
           </div>
           <div>
             <span className="text-navy-600">주소:</span>
-            <span className="ml-2 text-navy-900">{grades?.personalInfo?.address || '미입력'}</span>
+            <span className="ml-2 text-navy-900">{grades?.personalInfo?.address || '미입??}</span>
           </div>
           <div>
-            <span className="text-navy-600">학교유형:</span>
-            <span className="ml-2 text-navy-900">{grades?.personalInfo?.schoolType || '미입력'}</span>
+            <span className="text-navy-600">?�교?�형:</span>
+            <span className="ml-2 text-navy-900">{grades?.personalInfo?.schoolType || '미입??}</span>
           </div>
           <div>
             <span className="text-navy-600">계열:</span>
-            <span className="ml-2 text-navy-900">{grades?.personalInfo?.trackType || '미입력'}</span>
+            <span className="ml-2 text-navy-900">{grades?.personalInfo?.trackType || '미입??}</span>
           </div>
         </div>
         <div className="mt-4">
-          <span className="text-navy-600">지망학과:</span>
+          <span className="text-navy-600">지망학�?</span>
           <div className="mt-2 flex flex-wrap gap-2">
             {[grades?.personalInfo?.preferredMajor1, grades?.personalInfo?.preferredMajor2, grades?.personalInfo?.preferredMajor3]
               .filter(major => major && major.trim())
               .map((major, index) => (
                 <Badge key={index} className="bg-gold-100 text-gold-800">
-                  {major === '기타(직접입력)' ? grades?.personalInfo?.customMajor || '기타' : major}
+                  {major === '기�?(직접?�력)' ? grades?.personalInfo?.customMajor || '기�?' : major}
                 </Badge>
               ))}
           </div>
@@ -504,7 +504,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
     </Card>
   );
 
-  // 향상된 대학 카드 렌더링 함수
+  // ?�상???�??카드 ?�더�??�수
   const renderEnhancedUniversityCard = (university: DetailedUniversity, index: number) => {
     const colorClass = getAdmissionProbabilityColor(university.matchPercentage);
     const isExpanded = expandedAnalysis[`${university.name}-${index}`];
@@ -520,7 +520,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
             </div>
             <div className="text-right">
               <div className="text-lg font-bold">{university.matchPercentage}%</div>
-              <div className="text-xs">합격가능성</div>
+              <div className="text-xs">?�격가?�성</div>
             </div>
           </div>
 
@@ -530,11 +530,11 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
             </div>
             {university.admissionData && (
               <div className="space-y-1 text-xs">
-                <div><strong>작년 데이터:</strong> {university.admissionData.lastYear.score}등급 / {university.admissionData.lastYear.students}명</div>
-                <div className="opacity-75"><strong>3년 평균:</strong> {university.admissionData.threeYearAvg.score}등급 / {university.admissionData.threeYearAvg.students}명</div>
+                <div><strong>?�년 ?�이??</strong> {university.admissionData.lastYear.score}?�급 / {university.admissionData.lastYear.students}�?/div>
+                <div className="opacity-75"><strong>3???�균:</strong> {university.admissionData.threeYearAvg.score}?�급 / {university.admissionData.threeYearAvg.students}�?/div>
                 <div className="opacity-75">
-                  <strong>연도별:</strong> {university.admissionData.yearlyData.map(data => 
-                    `${data.year}년 ${data.score}등급`
+                  <strong>?�도�?</strong> {university.admissionData.yearlyData.map(data => 
+                    `${data.year}??${data.score}?�급`
                   ).join(', ')}
                 </div>
               </div>
@@ -546,19 +546,19 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
               className="flex items-center justify-between w-full p-2 bg-white/20 rounded hover:bg-white/30 transition-colors"
               onClick={() => toggleAnalysis(`${university.name}-${index}`)}
             >
-              <span className="text-sm font-medium">상세 분석</span>
+              <span className="text-sm font-medium">?�세 분석</span>
               {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </CollapsibleTrigger>
             {isExpanded && (
               <CollapsibleContent className="bg-white/20 rounded p-3 mt-2 space-y-2 text-sm">
                 <div>
-                  <strong>전략:</strong> {university.admissionStrategy}
+                  <strong>?�략:</strong> {university.admissionStrategy}
                 </div>
                 <div>
                   <strong>경쟁분석:</strong> {university.competitionAnalysis}
                 </div>
                 <div>
-                  <strong>경쟁률:</strong> {university.competitionRate}:1
+                  <strong>경쟁�?</strong> {university.competitionRate}:1
                 </div>
               </CollapsibleContent>
             )}
@@ -573,33 +573,33 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
           <Button onClick={onBack} variant="outline" className="mb-4 border-navy-300 text-navy-700 hover:bg-navy-100">
-            ← 성적 입력으로 돌아가기
+            ???�적 ?�력?�로 ?�아가�?
           </Button>
-          <h1 className="text-3xl mb-2 text-navy-900">성적 분석 보고서</h1>
-          <p className="text-navy-600">{studentName ? `${studentName}님의 ` : ''}맞춤형 입시 분석 결과입니다.</p>
+          <h1 className="text-3xl mb-2 text-navy-900">?�적 분석 보고??/h1>
+          <p className="text-navy-600">{studentName ? `${studentName}?�의 ` : ''}맞춤???�시 분석 결과?�니??</p>
         </div>
 
         {renderPersonalInfo()}
 
-        {/* 성적 분석 요약 섹션 */}
+        {/* ?�적 분석 ?�약 ?�션 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* 내신 성적 분석 */}
+          {/* ?�신 ?�적 분석 */}
           <Card className="shadow-lg border-navy-200">
             <CardHeader className="bg-navy-50">
               <CardTitle className="text-navy-800 flex items-center gap-2">
                 <School className="w-5 h-5" />
-                내신 과목별 성적분석
+                ?�신 과목�??�적분석
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="space-y-4">
                 <div className="flex justify-between items-center p-3 bg-navy-50 rounded">
-                  <span className="text-navy-700">평균 내신등급</span>
-                  <span className="text-2xl font-bold text-navy-900">{schoolGPA || 0}등급</span>
+                  <span className="text-navy-700">?�균 ?�신?�급</span>
+                  <span className="text-2xl font-bold text-navy-900">{schoolGPA || 0}?�급</span>
                 </div>
                 
                 <div className="space-y-2">
-                  <h4 className="font-medium text-navy-800">유리한 반영비율</h4>
+                  <h4 className="font-medium text-navy-800">?�리??반영비율</h4>
                   <p className="text-sm text-navy-600 bg-gold-50 p-2 rounded border border-gold-200">
                     {schoolBestRatio}
                   </p>
@@ -613,8 +613,8 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
                         <XAxis dataKey="subject" tick={{ fontSize: 12 }} />
                         <YAxis domain={[0, 9]} />
                         <Tooltip />
-                        <Bar dataKey="average" fill="#f59e0b" name="내 성적" />
-                        <Bar dataKey="nationalAverage" fill="#94a3b8" name="전국평균" />
+                        <Bar dataKey="average" fill="#f59e0b" name="???�적" />
+                        <Bar dataKey="nationalAverage" fill="#94a3b8" name="?�국?�균" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -623,23 +623,23 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
             </CardContent>
           </Card>
 
-          {/* 수능 성적 분석 */}
+          {/* ?�능 ?�적 분석 */}
           <Card className="shadow-lg border-navy-200">
             <CardHeader className="bg-navy-50">
               <CardTitle className="text-navy-800 flex items-center gap-2">
                 <BookOpen className="w-5 h-5" />
-                수능 과목별 성적분석
+                ?�능 과목�??�적분석
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="space-y-4">
                 <div className="flex justify-between items-center p-3 bg-navy-50 rounded">
-                  <span className="text-navy-700">평균 수능등급</span>
-                  <span className="text-2xl font-bold text-navy-900">{suneungAverage || 0}등급</span>
+                  <span className="text-navy-700">?�균 ?�능?�급</span>
+                  <span className="text-2xl font-bold text-navy-900">{suneungAverage || 0}?�급</span>
                 </div>
                 
                 <div className="space-y-2">
-                  <h4 className="font-medium text-navy-800">유리한 반영비율</h4>
+                  <h4 className="font-medium text-navy-800">?�리??반영비율</h4>
                   <p className="text-sm text-navy-600 bg-gold-50 p-2 rounded border border-gold-200">
                     {suneungBestRatio}
                   </p>
@@ -653,7 +653,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
                         <XAxis dataKey="subject" tick={{ fontSize: 12 }} />
                         <YAxis domain={[0, 9]} />
                         <Tooltip />
-                        <Bar dataKey="grade" fill="#0f172a" name="등급" />
+                        <Bar dataKey="grade" fill="#0f172a" name="?�급" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -663,19 +663,19 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
           </Card>
         </div>
 
-        {/* 대학 추천 섹션 */}
+        {/* ?�??추천 ?�션 */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="susi">수시 추천 대학</TabsTrigger>
-            <TabsTrigger value="jungsi">정시 추천 대학</TabsTrigger>
+            <TabsTrigger value="susi">?�시 추천 ?�??/TabsTrigger>
+            <TabsTrigger value="jungsi">?�시 추천 ?�??/TabsTrigger>
           </TabsList>
 
           <TabsContent value="susi">
             <Card className="shadow-lg border-navy-200">
               <CardHeader className="bg-navy-50">
-                <CardTitle className="text-navy-800">수시 추천 대학 (상위 20개)</CardTitle>
+                <CardTitle className="text-navy-800">?�시 추천 ?�??(?�위 20�?</CardTitle>
                 <p className="text-navy-600 text-sm mt-2">
-                  색상으로 합격 가능성을 표시합니���: 
+                  ?�상?�로 ?�격 가?�성???�시?�니���? 
                   <span className="inline-block w-3 h-3 bg-green-600 rounded ml-2 mr-1"></span>80%+ 
                   <span className="inline-block w-3 h-3 bg-green-300 rounded ml-2 mr-1"></span>50-79% 
                   <span className="inline-block w-3 h-3 bg-yellow-400 rounded ml-2 mr-1"></span>20-49% 
@@ -685,7 +685,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
               <CardContent className="pt-6">
                 {loading ? (
                   <div className="text-center py-8">
-                    <div className="text-navy-600">추천 결과를 계산 중입니다...</div>
+                    <div className="text-navy-600">추천 결과�?계산 중입?�다...</div>
                   </div>
                 ) : susiUniversities.length > 0 ? (
                   <div className="space-y-4">
@@ -693,7 +693,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <div className="text-navy-600">추천할 수시 대학이 없습니다.</div>
+                    <div className="text-navy-600">추천???�시 ?�?�이 ?�습?�다.</div>
                   </div>
                 )}
               </CardContent>
@@ -703,20 +703,20 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
           <TabsContent value="jungsi">
             <Tabs value={activeJungsiTab} onValueChange={setActiveJungsiTab}>
               <TabsList className="grid w-full grid-cols-3 mb-6">
-                <TabsTrigger value="ga">가군</TabsTrigger>
-                <TabsTrigger value="na">나군</TabsTrigger>
-                <TabsTrigger value="da">다군</TabsTrigger>
+                <TabsTrigger value="ga">가�?/TabsTrigger>
+                <TabsTrigger value="na">?�군</TabsTrigger>
+                <TabsTrigger value="da">?�군</TabsTrigger>
               </TabsList>
 
               <TabsContent value="ga">
                 <Card className="shadow-lg border-navy-200">
                   <CardHeader className="bg-navy-50">
-                    <CardTitle className="text-navy-800">정시 가군 추천 대학</CardTitle>
+                    <CardTitle className="text-navy-800">?�시 가�?추천 ?�??/CardTitle>
                   </CardHeader>
                   <CardContent className="pt-6">
                     {loading ? (
                       <div className="text-center py-8">
-                        <div className="text-navy-600">추천 결과를 계산 중입니다...</div>
+                        <div className="text-navy-600">추천 결과�?계산 중입?�다...</div>
                       </div>
                     ) : jungsiUniversities.ga.length > 0 ? (
                       <div className="space-y-4">
@@ -724,7 +724,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
                       </div>
                     ) : (
                       <div className="text-center py-8">
-                        <div className="text-navy-600">추천할 가군 대학이 없습니다.</div>
+                        <div className="text-navy-600">추천??가�??�?�이 ?�습?�다.</div>
                       </div>
                     )}
                   </CardContent>
@@ -734,12 +734,12 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
               <TabsContent value="na">
                 <Card className="shadow-lg border-navy-200">
                   <CardHeader className="bg-navy-50">
-                    <CardTitle className="text-navy-800">정시 나군 추천 대학</CardTitle>
+                    <CardTitle className="text-navy-800">?�시 ?�군 추천 ?�??/CardTitle>
                   </CardHeader>
                   <CardContent className="pt-6">
                     {loading ? (
                       <div className="text-center py-8">
-                        <div className="text-navy-600">추천 결과를 계산 중입니다...</div>
+                        <div className="text-navy-600">추천 결과�?계산 중입?�다...</div>
                       </div>
                     ) : jungsiUniversities.na.length > 0 ? (
                       <div className="space-y-4">
@@ -747,7 +747,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
                       </div>
                     ) : (
                       <div className="text-center py-8">
-                        <div className="text-navy-600">추천할 나군 대학이 없습니다.</div>
+                        <div className="text-navy-600">추천???�군 ?�?�이 ?�습?�다.</div>
                       </div>
                     )}
                   </CardContent>
@@ -757,12 +757,12 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
               <TabsContent value="da">
                 <Card className="shadow-lg border-navy-200">
                   <CardHeader className="bg-navy-50">
-                    <CardTitle className="text-navy-800">정시 다군 추천 대학</CardTitle>
+                    <CardTitle className="text-navy-800">?�시 ?�군 추천 ?�??/CardTitle>
                   </CardHeader>
                   <CardContent className="pt-6">
                     {loading ? (
                       <div className="text-center py-8">
-                        <div className="text-navy-600">추천 결과를 계산 중입니다...</div>
+                        <div className="text-navy-600">추천 결과�?계산 중입?�다...</div>
                       </div>
                     ) : jungsiUniversities.da.length > 0 ? (
                       <div className="space-y-4">
@@ -770,7 +770,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
                       </div>
                     ) : (
                       <div className="text-center py-8">
-                        <div className="text-navy-600">추천할 다군 대학이 없습니다.</div>
+                        <div className="text-navy-600">추천???�군 ?�?�이 ?�습?�다.</div>
                       </div>
                     )}
                   </CardContent>
