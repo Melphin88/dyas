@@ -101,7 +101,48 @@ function App() {
     
     if (savedSuneung) {
       try {
-        setSimpleSuneungData(JSON.parse(savedSuneung));
+        const suneungData = JSON.parse(savedSuneung);
+        
+        // 이전 구조인지 확인하고 새로운 구조로 변환
+        const isOldStructure = suneungData.korean && typeof suneungData.korean === 'number';
+        
+        if (isOldStructure) {
+          // 이전 구조를 새로운 구조로 변환
+          const newStructure = {
+            korean: { 
+              grade: suneungData.korean || 0, 
+              standardScore: 0, 
+              rawScore: 0 
+            },
+            math: { 
+              grade: suneungData.math || 0, 
+              standardScore: 0, 
+              rawScore: 0 
+            },
+            english: { 
+              grade: suneungData.english || 0, 
+              rawScore: 0 
+            },
+            koreanHistory: { 
+              grade: 0, 
+              rawScore: 0 
+            },
+            inquiry1: { 
+              grade: suneungData.inquiry1 || 0, 
+              standardScore: 0, 
+              rawScore: 0 
+            },
+            inquiry2: { 
+              grade: suneungData.inquiry2 || 0, 
+              standardScore: 0, 
+              rawScore: 0 
+            }
+          };
+          setSimpleSuneungData(newStructure);
+        } else {
+          // 이미 새로운 구조
+          setSimpleSuneungData(suneungData);
+        }
       } catch (error) {
         console.warn('저장된 수능 성적 로드 실패:', error);
       }

@@ -204,15 +204,61 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
     specialtySubjects: {}
   });
 
-  // 간단한 수능 성적 입력 상태
-  const [simpleSuneung, setSimpleSuneung] = useState<SimpleSuneungData>(initialSimpleSuneung || {
-    korean: { grade: 0, standardScore: 0, rawScore: 0 },
-    math: { grade: 0, standardScore: 0, rawScore: 0 },
-    english: { grade: 0, rawScore: 0 },
-    koreanHistory: { grade: 0, rawScore: 0 },
-    inquiry1: { grade: 0, standardScore: 0, rawScore: 0 },
-    inquiry2: { grade: 0, standardScore: 0, rawScore: 0 }
-  });
+  // 간단한 수능 성적 입력 상태 - 안전한 초기화
+  const getInitialSuneungData = (): SimpleSuneungData => {
+    if (!initialSimpleSuneung) {
+      return {
+        korean: { grade: 0, standardScore: 0, rawScore: 0 },
+        math: { grade: 0, standardScore: 0, rawScore: 0 },
+        english: { grade: 0, rawScore: 0 },
+        koreanHistory: { grade: 0, rawScore: 0 },
+        inquiry1: { grade: 0, standardScore: 0, rawScore: 0 },
+        inquiry2: { grade: 0, standardScore: 0, rawScore: 0 }
+      };
+    }
+
+    // 새로운 구조인지 확인
+    const isNewStructure = initialSimpleSuneung.korean && typeof initialSimpleSuneung.korean === 'object' && 'grade' in initialSimpleSuneung.korean;
+    
+    if (isNewStructure) {
+      // 이미 새로운 구조
+      return initialSimpleSuneung;
+    } else {
+      // 이전 구조를 새로운 구조로 변환
+      return {
+        korean: { 
+          grade: initialSimpleSuneung.korean || 0, 
+          standardScore: 0, 
+          rawScore: 0 
+        },
+        math: { 
+          grade: initialSimpleSuneung.math || 0, 
+          standardScore: 0, 
+          rawScore: 0 
+        },
+        english: { 
+          grade: initialSimpleSuneung.english || 0, 
+          rawScore: 0 
+        },
+        koreanHistory: { 
+          grade: 0, 
+          rawScore: 0 
+        },
+        inquiry1: { 
+          grade: initialSimpleSuneung.inquiry1 || 0, 
+          standardScore: 0, 
+          rawScore: 0 
+        },
+        inquiry2: { 
+          grade: initialSimpleSuneung.inquiry2 || 0, 
+          standardScore: 0, 
+          rawScore: 0 
+        }
+      };
+    }
+  };
+
+  const [simpleSuneung, setSimpleSuneung] = useState<SimpleSuneungData>(getInitialSuneungData());
   
   // 각 학년별 학기 탭 상태 관리
   const [activeSemesterTabs, setActiveSemesterTabs] = useState({
