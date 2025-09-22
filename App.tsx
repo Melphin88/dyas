@@ -444,7 +444,13 @@ function App() {
           <div>
             <DevelopmentModeAlert />
             <AdminPanel
-              accounts={supabaseAccounts}
+              accounts={supabaseAccounts.map(acc => ({
+                id: acc.username, // username(전화번호)을 id로 사용
+                name: acc.name,
+                password: acc.password,
+                displayId: acc.username, // 표시용 아이디 (전화번호)
+                isPhoneNumber: true // 전화번호임을 표시
+              }))}
               studentGrades={studentGrades}
               onAddAccount={handleAddAccount}
               onDeleteAccount={handleDeleteAccount}
