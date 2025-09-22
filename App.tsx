@@ -58,7 +58,7 @@ interface GradeData {
 
 function App() {
   // 기본 상태들
-  const [currentView, setCurrentView] = useState<'login' | 'register' | 'admin' | 'grade' | 'suneung' | 'report' | 'print'>('login');
+  const [currentView, setCurrentView] = useState<'login' | 'register' | 'admin' | 'grade' | 'report' | 'print'>('login');
   const [currentUser, setCurrentUser] = useState<Account | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   
@@ -392,17 +392,7 @@ function App() {
                   : 'border-transparent text-navy-600 hover:text-navy-800'
               }`}
             >
-              내신 성적 입력
-            </button>
-            <button
-              onClick={() => setCurrentView('suneung')}
-              className={`pb-2 border-b-2 transition-colors ${
-                currentView === 'suneung'
-                  ? 'border-gold-500 text-gold-600'
-                  : 'border-transparent text-navy-600 hover:text-navy-800'
-              }`}
-            >
-              수능 성적 입력
+              성적 입력
             </button>
             <button
               onClick={() => setCurrentView('report')}
@@ -504,7 +494,7 @@ function App() {
             grades={studentGrades[currentUser.id]}
             simpleGradeData={simpleGradeData}
             simpleSuneungData={simpleSuneungData}
-            onBack={() => setCurrentView('suneung')}
+            onBack={() => setCurrentView('grade')}
           />
         )}
 
