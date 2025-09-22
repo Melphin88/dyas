@@ -396,7 +396,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
           threeYearAvg: { score: rec.cutOffData?.grade50 || 0, students: 0 },
           yearlyData: []
         }
-      } as DetailedUniversity),
+      } as DetailedUniversity)),
     na: jungsiRecommendations
       .filter((rec: any) => rec.admissionType?.includes('나군'))
       .slice(0, 6)
@@ -423,7 +423,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
           threeYearAvg: { score: rec.cutOffData?.grade50 || 0, students: 0 },
           yearlyData: []
         }
-      } as DetailedUniversity),
+      } as DetailedUniversity)),
     da: jungsiRecommendations
       .filter((rec: any) => rec.admissionType?.includes('다군'))
       .slice(0, 6)
@@ -450,7 +450,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
           threeYearAvg: { score: rec.cutOffData?.grade50 || 0, students: 0 },
           yearlyData: []
         }
-      } as DetailedUniversity)
+      } as DetailedUniversity))
   };
 
 
