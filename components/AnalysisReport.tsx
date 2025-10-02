@@ -234,7 +234,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
           }
         },
         preferredUniversities: [],
-        preferredMajors: ['컴퓨터', '공학', '정보'], // 기본 지망학과 설정
+        preferredMajors: grades?.personalInfo?.preferredMajor ? [grades.personalInfo.preferredMajor] : ['컴퓨터', '공학', '정보'], // 지망학과 설정
         preferredRegions: []
       };
 

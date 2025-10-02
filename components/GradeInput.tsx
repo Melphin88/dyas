@@ -292,8 +292,23 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
     }
   }, [initialGrades, initialSimpleGrades]);
 
+  // 실시간 저장 - 간편 성적
+  useEffect(() => {
+    if (onSaveSimpleGrade && simpleGrades) {
+      onSaveSimpleGrade(simpleGrades);
+    }
+  }, [simpleGrades, onSaveSimpleGrade]);
+
+  // 실시간 저장 - 수능 성적
+  useEffect(() => {
+    if (onSaveSimpleSuneung && simpleSuneung) {
+      onSaveSimpleSuneung(simpleSuneung);
+    }
+  }, [simpleSuneung, onSaveSimpleSuneung]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // 실시간 저장이므로 버튼 클릭 시 바로 다음 단계로
     if (activeMainTab === 'simple' && onSaveSimpleGrade) {
       onSaveSimpleGrade(simpleGrades);
     } else if (activeMainTab === 'suneung' && onSaveSimpleSuneung) {
@@ -855,6 +870,17 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
               </SelectContent>
             </Select>
           </div>
+
+          {/* 지망학과 */}
+          <div className="space-y-2">
+            <Label className="text-navy-600">지망학과</Label>
+            <Input
+              placeholder="예: 컴퓨터공학, 의학, 경영학 등"
+              value={grades.personalInfo.preferredMajor || ''}
+              onChange={(e) => updatePersonalInfo('preferredMajor', e.target.value)}
+              className="border-navy-200 focus:border-gold-500 focus:ring-gold-500"
+            />
+          </div>
         </div>
 
         {/* 지망 계열/학과 */}
@@ -1150,8 +1176,8 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
 
           <div className="mt-8 flex justify-center">
             <Button type="submit" className="w-full max-w-md bg-gold-600 hover:bg-gold-700 text-white shadow-lg">
-              {activeMainTab === 'simple' ? '간편 성적 저장하고 다음 단계로' : 
-               activeMainTab === 'suneung' ? '수능 성적 저장하고 분석 결과 보기' : '분석 결과 보기'}
+              {activeMainTab === 'simple' ? '다음 단계로' : 
+               activeMainTab === 'suneung' ? '분석 결과 보기' : '분석 결과 보기'}
             </Button>
           </div>
         </form>
