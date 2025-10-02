@@ -408,7 +408,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
   // 실제 추천 결과에서 수시 대학 데이터 추출
   const susiUniversities: DetailedUniversity[] = recommendations 
     ? recommendations
-        .filter((rec: any) => rec.admissionType === '수시' || rec.admissionType?.includes('수시'))
+        .filter((rec: any) => rec.admissionType?.includes('교과') || rec.admissionType?.includes('종합'))
         .slice(0, 20)
         .map((rec: any) => ({
           name: rec.university,
