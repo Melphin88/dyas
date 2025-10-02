@@ -234,7 +234,11 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
           }
         },
         preferredUniversities: [],
-        preferredMajors: grades?.personalInfo?.preferredMajors || [], // 드롭박스에서 선택한 학과들
+        preferredMajors: [
+          grades?.personalInfo?.preferredMajor1,
+          grades?.personalInfo?.preferredMajor2, 
+          grades?.personalInfo?.preferredMajor3
+        ].filter(Boolean) || [], // 드롭박스에서 선택한 학과들
         preferredRegions: []
       };
 
@@ -416,7 +420,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
           admissionType: '수시',
           competitionRate: rec.cutOffData?.competitionRate || 0,
           requiredGrade: rec.cutOffData?.grade50 || 0,
-          matchPercentage: rec.probabilityScore,
+          matchPercentage: Math.round(rec.probabilityScore),
           location: '지역 정보 없음',
           description: `${rec.university} ${rec.department} - ${rec.probability} 추천`,
           requirements: {
@@ -451,7 +455,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         admissionType: '정시 가군',
         competitionRate: rec.cutOffData?.competitionRate || 0,
         requiredGrade: rec.cutOffData?.grade50 || 0,
-        matchPercentage: rec.probabilityScore,
+        matchPercentage: Math.round(rec.probabilityScore),
         location: '지역 정보 없음',
         description: `${rec.university} ${rec.department} - ${rec.probability} 추천`,
         requirements: {
@@ -478,7 +482,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         admissionType: '정시 나군',
         competitionRate: rec.cutOffData?.competitionRate || 0,
         requiredGrade: rec.cutOffData?.grade50 || 0,
-        matchPercentage: rec.probabilityScore,
+        matchPercentage: Math.round(rec.probabilityScore),
         location: '지역 정보 없음',
         description: `${rec.university} ${rec.department} - ${rec.probability} 추천`,
         requirements: {
@@ -505,7 +509,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         admissionType: '정시 다군',
         competitionRate: rec.cutOffData?.competitionRate || 0,
         requiredGrade: rec.cutOffData?.grade50 || 0,
-        matchPercentage: rec.probabilityScore,
+        matchPercentage: Math.round(rec.probabilityScore),
         location: '지역 정보 없음',
         description: `${rec.university} ${rec.department} - ${rec.probability} 추천`,
         requirements: {
