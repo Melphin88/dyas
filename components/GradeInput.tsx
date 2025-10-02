@@ -871,16 +871,6 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
             </Select>
           </div>
 
-          {/* 지망학과 */}
-          <div className="space-y-2">
-            <Label className="text-navy-600">지망학과</Label>
-            <Input
-              placeholder="예: 컴퓨터공학, 의학, 경영학 등"
-              value={grades.personalInfo.preferredMajor || ''}
-              onChange={(e) => updatePersonalInfo('preferredMajor', e.target.value)}
-              className="border-navy-200 focus:border-gold-500 focus:ring-gold-500"
-            />
-          </div>
         </div>
 
         {/* 지망 계열/학과 */}
@@ -1174,12 +1164,6 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
             </TabsContent>
           </Tabs>
 
-          <div className="mt-8 flex justify-center">
-            <Button type="submit" className="w-full max-w-md bg-gold-600 hover:bg-gold-700 text-white shadow-lg">
-              {activeMainTab === 'simple' ? '다음 단계로' : 
-               activeMainTab === 'suneung' ? '분석 결과 보기' : '분석 결과 보기'}
-            </Button>
-          </div>
         </form>
       </div>
     </div>

@@ -234,7 +234,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
           }
         },
         preferredUniversities: [],
-        preferredMajors: grades?.personalInfo?.preferredMajor ? [grades.personalInfo.preferredMajor] : ['컴퓨터', '공학', '정보'], // 지망학과 설정
+        preferredMajors: grades?.personalInfo?.preferredMajors || [], // 드롭박스에서 선택한 학과들
         preferredRegions: []
       };
 
