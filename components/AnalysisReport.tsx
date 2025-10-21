@@ -569,29 +569,33 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
             <span className="text-navy-600">이름:</span>
-            <span className="ml-2 text-navy-900">{grades?.personalInfo?.name || '미입력'}</span>
+            <span className="ml-2 text-navy-900">{simpleGradeData?.personalInfo?.name || grades?.personalInfo?.name || '미입력'}</span>
           </div>
           <div>
             <span className="text-navy-600">주소:</span>
-            <span className="ml-2 text-navy-900">{grades?.personalInfo?.address || '미입력'}</span>
+            <span className="ml-2 text-navy-900">{simpleGradeData?.personalInfo?.address || grades?.personalInfo?.address || '미입력'}</span>
           </div>
           <div>
             <span className="text-navy-600">학교유형:</span>
-            <span className="ml-2 text-navy-900">{grades?.personalInfo?.schoolType || '미입력'}</span>
+            <span className="ml-2 text-navy-900">{simpleGradeData?.personalInfo?.schoolType || grades?.personalInfo?.schoolType || '미입력'}</span>
           </div>
           <div>
             <span className="text-navy-600">계열:</span>
-            <span className="ml-2 text-navy-900">{grades?.personalInfo?.trackType || '미입력'}</span>
+            <span className="ml-2 text-navy-900">{simpleGradeData?.personalInfo?.trackType || grades?.personalInfo?.trackType || '미입력'}</span>
           </div>
         </div>
         <div className="mt-4">
           <span className="text-navy-600">지망학과:</span>
           <div className="mt-2 flex flex-wrap gap-2">
-            {[grades?.personalInfo?.preferredMajor1, grades?.personalInfo?.preferredMajor2, grades?.personalInfo?.preferredMajor3]
+            {[
+              simpleGradeData?.personalInfo?.preferredMajor1 || grades?.personalInfo?.preferredMajor1,
+              simpleGradeData?.personalInfo?.preferredMajor2 || grades?.personalInfo?.preferredMajor2,
+              simpleGradeData?.personalInfo?.preferredMajor3 || grades?.personalInfo?.preferredMajor3
+            ]
               .filter(major => major && major.trim())
               .map((major, index) => (
                 <Badge key={index} className="bg-gold-100 text-gold-800">
-                  {major === '기타(직접입력)' ? grades?.personalInfo?.customMajor || '기타' : major}
+                  {major === '기타(직접입력)' ? (simpleGradeData?.personalInfo?.customMajor || grades?.personalInfo?.customMajor || '기타') : major}
                 </Badge>
               ))}
           </div>
