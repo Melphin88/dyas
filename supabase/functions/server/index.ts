@@ -123,4 +123,93 @@ app.get('/server/auth/me', (c) => {
   return c.json({ id: 'mock', name: 'Mock User' })
 })
 
+// 대학 추천 계산 엔드포인트
+app.post('/server/calculate-recommendations', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { studentData, debugMode } = body
+    
+    console.log('받은 학생 데이터:', JSON.stringify(studentData, null, 2))
+    
+    // 지망학과 정보 확인
+    const preferredMajors = studentData.preferredMajors || []
+    console.log('지망학과:', preferredMajors)
+    
+    // 하드코딩된 추천 대학들 (실제로는 데이터베이스에서 가져와야 함)
+    const mockRecommendations = [
+      {
+        university: '서울대학교',
+        department: preferredMajors[0] || '컴퓨터공학과',
+        admissionType: '수시(교과)',
+        probability: 85,
+        matchScore: 92,
+        requirements: {
+          minInternalGrade: 2.5,
+          minSuneungGrade: 3,
+          requiredSubjects: ['국어', '수학', '영어']
+        },
+        admissionStrategy: '내신 중심 전형으로 지원 권장',
+        competitionAnalysis: '경쟁률이 높지만 성적이 우수하여 합격 가능성 높음',
+        recommendation: 'optimal' as const
+      },
+      {
+        university: '연세대학교',
+        department: preferredMajors[0] || '경영학과',
+        admissionType: '수시(종합)',
+        probability: 78,
+        matchScore: 88,
+        requirements: {
+          minInternalGrade: 2.8,
+          minSuneungGrade: 4,
+          requiredSubjects: ['국어', '수학', '영어']
+        },
+        admissionStrategy: '학생부종합전형으로 지원 권장',
+        competitionAnalysis: '다양한 평가 요소로 인해 성적 외 요소도 중요',
+        recommendation: 'safe' as const
+      },
+      {
+        university: '고려대학교',
+        department: preferredMajors[0] || '경영학과',
+        admissionType: '정시(가)',
+        probability: 65,
+        matchScore: 82,
+        requirements: {
+          minInternalGrade: 3.0,
+          minSuneungGrade: 2,
+          requiredSubjects: ['국어', '수학', '영어']
+        },
+        admissionStrategy: '정시 전형으로 지원 권장',
+        competitionAnalysis: '수능 성적이 중요하며 내신보다 수능 비중이 높음',
+        recommendation: 'challenge' as const
+      }
+    ]
+    
+    // 지망학과에 따른 필터링
+    const filteredRecommendations = mockRecommendations.map(rec => ({
+      ...rec,
+      department: preferredMajors[0] || rec.department
+    }))
+    
+    console.log('필터링된 추천:', filteredRecommendations)
+    
+    return c.json({
+      success: true,
+      recommendations: filteredRecommendations,
+      debugInfo: {
+        receivedMajors: preferredMajors,
+        totalRecommendations: filteredRecommendations.length,
+        timestamp: new Date().toISOString()
+      }
+    })
+    
+  } catch (error) {
+    console.error('추천 계산 오류:', error)
+    return c.json({
+      success: false,
+      error: '추천 계산 중 오류가 발생했습니다.',
+      recommendations: []
+    }, 500)
+  }
+})
+
 Deno.serve(app.fetch)

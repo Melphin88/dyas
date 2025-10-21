@@ -243,8 +243,14 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
       };
 
       console.log('전송할 학생 데이터:', JSON.stringify(studentData, null, 2));
+      console.log('지망학과 정보:', {
+        preferredMajor1: grades?.personalInfo?.preferredMajor1,
+        preferredMajor2: grades?.personalInfo?.preferredMajor2,
+        preferredMajor3: grades?.personalInfo?.preferredMajor3,
+        customMajor: grades?.personalInfo?.customMajor
+      });
       
-      const response = await fetch(`https://kgbcqvvkahugbrqlomjc.supabase.co/functions/v1/calculate-recommendations`, {
+      const response = await fetch(`https://kgbcqvvkahugbrqlomjc.supabase.co/functions/v1/server/calculate-recommendations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
