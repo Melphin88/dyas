@@ -1,130 +1,107 @@
 import { Hono } from 'npm:hono'
 import { cors } from 'npm:hono/cors'
 
+// CSV 데이터에서 대학 정보 로드
+async function loadUniversityDataFromCSV(preferredMajors: string[]) {
+  console.log('CSV 데이터 로드 시작, 지망학과:', preferredMajors)
+  
+  try {
+    // 수시 데이터 로드
+    const susiResponse = await fetch('https://raw.githubusercontent.com/Melphin88/dyas/main/uadiga_full_data.csv')
+    const susiText = await susiResponse.text()
+    const susiLines = susiText.split('\n').slice(1) // 헤더 제외
+    
+    // 정시 데이터 로드  
+    const jeongsiResponse = await fetch('https://raw.githubusercontent.com/Melphin88/dyas/main/uadiga_jeongsi_full_data.csv')
+    const jeongsiText = await jeongsiResponse.text()
+    const jeongsiLines = jeongsiText.split('\n').slice(1) // 헤더 제외
+    
+    const universities = []
+    
+    // 수시 데이터 처리
+    for (const line of susiLines) {
+      if (!line.trim()) continue
+      
+      const columns = line.split(',')
+      if (columns.length < 18) continue
+      
+      const [region, university, category, highschoolType, admissionType, year, department, perfectScore, convert50Cut, convert70Cut, grade50Cut, grade70Cut, recruitmentCount, competitionRate, additionalPass, totalApply, passNum, realCompetitionRate] = columns
+      
+      // 지망학과와 매칭되는지 확인
+      const isMatchingMajor = preferredMajors.some(major => 
+        department.includes(major) || major.includes(department)
+      )
+      
+      if (isMatchingMajor && grade70Cut && !isNaN(parseFloat(grade70Cut))) {
+        universities.push({
+          university: university.trim(),
+          department: department.trim(),
+          admissionType: admissionType.trim(),
+          cutline: parseFloat(grade70Cut),
+          region: region.trim(),
+          year: parseInt(year) || 2023,
+          recruitmentCount: parseInt(recruitmentCount) || 0,
+          competitionRate: parseFloat(competitionRate) || 0,
+          category: category.trim()
+        })
+      }
+    }
+    
+    // 정시 데이터 처리
+    for (const line of jeongsiLines) {
+      if (!line.trim()) continue
+      
+      const columns = line.split(',')
+      if (columns.length < 22) continue
+      
+      const [region, university, category, admissionType, year, department, perfectScore, convert50Cut, convert70Cut, grade50Cut, grade70Cut, korean, math, inquiry, average, english, recruitmentCount, competitionRate, additionalPass, totalApply, passNum, realCompetitionRate] = columns
+      
+      // 지망학과와 매칭되는지 확인
+      const isMatchingMajor = preferredMajors.some(major => 
+        department.includes(major) || major.includes(department)
+      )
+      
+      if (isMatchingMajor && grade70Cut && !isNaN(parseFloat(grade70Cut))) {
+        universities.push({
+          university: university.trim(),
+          department: department.trim(),
+          admissionType: admissionType.trim(),
+          cutline: parseFloat(grade70Cut),
+          region: region.trim(),
+          year: parseInt(year) || 2023,
+          recruitmentCount: parseInt(recruitmentCount) || 0,
+          competitionRate: parseFloat(competitionRate) || 0,
+          category: category.trim()
+        })
+      }
+    }
+    
+    console.log(`CSV에서 로드된 대학 수: ${universities.length}`)
+    console.log('로드된 대학 샘플:', universities.slice(0, 5))
+    
+    return universities
+    
+  } catch (error) {
+    console.error('CSV 데이터 로드 실패:', error)
+    return []
+  }
+}
+
 // 대학 추천 계산 함수
 async function calculateUniversityRecommendations(studentData: any, preferredMajors: string[]) {
   console.log('=== 대학 추천 계산 시작 ===')
   console.log('학생 데이터:', JSON.stringify(studentData, null, 2))
   console.log('지망학과:', preferredMajors)
   
-  // 실제 대학 데이터 (다양한 학과 포함)
-  const universities = [
-    // 토목공학과 관련 대학들
-    { university: '서울대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 2.8, probability: 85, region: '서울' },
-    { university: '연세대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 3.2, probability: 78, region: '서울' },
-    { university: '고려대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 3.5, probability: 72, region: '서울' },
-    { university: '성균관대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 3.8, probability: 68, region: '서울' },
-    { university: '한양대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 4.0, probability: 65, region: '서울' },
-    { university: '중앙대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 4.2, probability: 62, region: '서울' },
-    { university: '경희대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 4.5, probability: 58, region: '서울' },
-    { university: '동국대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 4.8, probability: 55, region: '서울' },
-    { university: '홍익대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 5.0, probability: 52, region: '서울' },
-    { university: '국민대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 5.2, probability: 48, region: '서울' },
-    { university: '세종대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 5.5, probability: 45, region: '서울' },
-    { university: '광운대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 5.8, probability: 42, region: '서울' },
-    { university: '명지대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 6.0, probability: 38, region: '서울' },
-    { university: '숭실대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 6.2, probability: 35, region: '서울' },
-    { university: '인하대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 6.5, probability: 32, region: '인천' },
-    { university: '아주대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 6.8, probability: 28, region: '경기' },
-    { university: '단국대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 7.0, probability: 25, region: '경기' },
-    { university: '가천대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 7.2, probability: 22, region: '경기' },
-    { university: '서강대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 7.5, probability: 18, region: '서울' },
-    { university: '이화여자대학교', department: '토목공학과', admissionType: '수시(교과)', cutline: 7.8, probability: 15, region: '서울' },
-    
-    // 산업공학과 관련 대학들
-    { university: '서울대학교', department: '산업공학과', admissionType: '수시(교과)', cutline: 2.5, probability: 88, region: '서울' },
-    { university: '연세대학교', department: '산업공학과', admissionType: '수시(교과)', cutline: 2.8, probability: 82, region: '서울' },
-    { university: '고려대학교', department: '산업공학과', admissionType: '수시(교과)', cutline: 3.0, probability: 78, region: '서울' },
-    { university: '성균관대학교', department: '산업공학과', admissionType: '수시(교과)', cutline: 3.2, probability: 75, region: '서울' },
-    { university: '한양대학교', department: '산업공학과', admissionType: '수시(교과)', cutline: 3.5, probability: 72, region: '서울' },
-    { university: '중앙대학교', department: '산업공학과', admissionType: '수시(교과)', cutline: 3.8, probability: 68, region: '서울' },
-    { university: '경희대학교', department: '산업공학과', admissionType: '수시(교과)', cutline: 4.0, probability: 65, region: '서울' },
-    { university: '동국대학교', department: '산업공학과', admissionType: '수시(교과)', cutline: 4.2, probability: 62, region: '서울' },
-    { university: '홍익대학교', department: '산업공학과', admissionType: '수시(교과)', cutline: 4.5, probability: 58, region: '서울' },
-    { university: '국민대학교', department: '산업공학과', admissionType: '수시(교과)', cutline: 4.8, probability: 55, region: '서울' },
-    { university: '세종대학교', department: '산업공학과', admissionType: '수시(교과)', cutline: 5.0, probability: 52, region: '서울' },
-    { university: '광운대학교', department: '산업공학과', admissionType: '수시(교과)', cutline: 5.2, probability: 48, region: '서울' },
-    { university: '명지대학교', department: '산업공학과', admissionType: '수시(교과)', cutline: 5.5, probability: 45, region: '서울' },
-    { university: '숭실대학교', department: '산업공학과', admissionType: '수시(교과)', cutline: 5.8, probability: 42, region: '서울' },
-    { university: '인하대학교', department: '산업공학과', admissionType: '수시(교과)', cutline: 6.0, probability: 38, region: '인천' },
-    { university: '아주대학교', department: '산업공학과', admissionType: '수시(교과)', cutline: 6.2, probability: 35, region: '경기' },
-    { university: '단국대학교', department: '산업공학과', admissionType: '수시(교과)', cutline: 6.5, probability: 32, region: '경기' },
-    { university: '가천대학교', department: '산업공학과', admissionType: '수시(교과)', cutline: 6.8, probability: 28, region: '경기' },
-    { university: '서강대학교', department: '산업공학과', admissionType: '수시(교과)', cutline: 7.0, probability: 25, region: '서울' },
-    
-    // 약학과 관련 대학들
-    { university: '서울대학교', department: '약학과', admissionType: '수시(교과)', cutline: 2.0, probability: 90, region: '서울' },
-    { university: '연세대학교', department: '약학과', admissionType: '수시(교과)', cutline: 2.2, probability: 85, region: '서울' },
-    { university: '고려대학교', department: '약학과', admissionType: '수시(교과)', cutline: 2.5, probability: 80, region: '서울' },
-    { university: '성균관대학교', department: '약학과', admissionType: '수시(교과)', cutline: 2.8, probability: 75, region: '서울' },
-    { university: '한양대학교', department: '약학과', admissionType: '수시(교과)', cutline: 3.0, probability: 70, region: '서울' },
-    { university: '중앙대학교', department: '약학과', admissionType: '수시(교과)', cutline: 3.2, probability: 65, region: '서울' },
-    { university: '경희대학교', department: '약학과', admissionType: '수시(교과)', cutline: 3.5, probability: 60, region: '서울' },
-    { university: '동국대학교', department: '약학과', admissionType: '수시(교과)', cutline: 3.8, probability: 55, region: '서울' },
-    { university: '홍익대학교', department: '약학과', admissionType: '수시(교과)', cutline: 4.0, probability: 50, region: '서울' },
-    { university: '국민대학교', department: '약학과', admissionType: '수시(교과)', cutline: 4.2, probability: 45, region: '서울' },
-    { university: '세종대학교', department: '약학과', admissionType: '수시(교과)', cutline: 4.5, probability: 40, region: '서울' },
-    { university: '광운대학교', department: '약학과', admissionType: '수시(교과)', cutline: 4.8, probability: 35, region: '서울' },
-    { university: '명지대학교', department: '약학과', admissionType: '수시(교과)', cutline: 5.0, probability: 30, region: '서울' },
-    { university: '숭실대학교', department: '약학과', admissionType: '수시(교과)', cutline: 5.2, probability: 25, region: '서울' },
-    { university: '인하대학교', department: '약학과', admissionType: '수시(교과)', cutline: 5.5, probability: 20, region: '인천' },
-    { university: '아주대학교', department: '약학과', admissionType: '수시(교과)', cutline: 5.8, probability: 18, region: '경기' },
-    { university: '단국대학교', department: '약학과', admissionType: '수시(교과)', cutline: 6.0, probability: 15, region: '경기' },
-    { university: '가천대학교', department: '약학과', admissionType: '수시(교과)', cutline: 6.2, probability: 12, region: '경기' },
-    { university: '서강대학교', department: '약학과', admissionType: '수시(교과)', cutline: 6.5, probability: 10, region: '서울' },
-    { university: '이화여자대학교', department: '약학과', admissionType: '수시(교과)', cutline: 6.8, probability: 8, region: '서울' },
-    
-    // 정시 대학들 (토목공학과)
-    { university: '서울대학교', department: '토목공학과', admissionType: '정시(가)', cutline: 2.0, probability: 85, region: '서울' },
-    { university: '연세대학교', department: '토목공학과', admissionType: '정시(가)', cutline: 2.5, probability: 80, region: '서울' },
-    { university: '고려대학교', department: '토목공학과', admissionType: '정시(가)', cutline: 3.0, probability: 75, region: '서울' },
-    { university: '성균관대학교', department: '토목공학과', admissionType: '정시(가)', cutline: 3.5, probability: 70, region: '서울' },
-    { university: '한양대학교', department: '토목공학과', admissionType: '정시(가)', cutline: 4.0, probability: 65, region: '서울' },
-    { university: '중앙대학교', department: '토목공학과', admissionType: '정시(가)', cutline: 4.5, probability: 60, region: '서울' },
-    { university: '경희대학교', department: '토목공학과', admissionType: '정시(가)', cutline: 5.0, probability: 55, region: '서울' },
-    { university: '동국대학교', department: '토목공학과', admissionType: '정시(가)', cutline: 5.5, probability: 50, region: '서울' },
-    { university: '홍익대학교', department: '토목공학과', admissionType: '정시(가)', cutline: 6.0, probability: 45, region: '서울' },
-    { university: '국민대학교', department: '토목공학과', admissionType: '정시(가)', cutline: 6.5, probability: 40, region: '서울' },
-    { university: '세종대학교', department: '토목공학과', admissionType: '정시(가)', cutline: 7.0, probability: 35, region: '서울' },
-    { university: '광운대학교', department: '토목공학과', admissionType: '정시(가)', cutline: 7.5, probability: 30, region: '서울' },
-    { university: '명지대학교', department: '토목공학과', admissionType: '정시(가)', cutline: 8.0, probability: 25, region: '서울' },
-    { university: '숭실대학교', department: '토목공학과', admissionType: '정시(가)', cutline: 8.5, probability: 20, region: '서울' },
-    { university: '인하대학교', department: '토목공학과', admissionType: '정시(가)', cutline: 9.0, probability: 15, region: '인천' },
-    
-    // 정시 대학들 (산업공학과)
-    { university: '서울대학교', department: '산업공학과', admissionType: '정시(가)', cutline: 1.8, probability: 88, region: '서울' },
-    { university: '연세대학교', department: '산업공학과', admissionType: '정시(가)', cutline: 2.2, probability: 83, region: '서울' },
-    { university: '고려대학교', department: '산업공학과', admissionType: '정시(가)', cutline: 2.8, probability: 78, region: '서울' },
-    { university: '성균관대학교', department: '산업공학과', admissionType: '정시(가)', cutline: 3.2, probability: 73, region: '서울' },
-    { university: '한양대학교', department: '산업공학과', admissionType: '정시(가)', cutline: 3.8, probability: 68, region: '서울' },
-    { university: '중앙대학교', department: '산업공학과', admissionType: '정시(가)', cutline: 4.2, probability: 63, region: '서울' },
-    { university: '경희대학교', department: '산업공학과', admissionType: '정시(가)', cutline: 4.8, probability: 58, region: '서울' },
-    { university: '동국대학교', department: '산업공학과', admissionType: '정시(가)', cutline: 5.2, probability: 53, region: '서울' },
-    { university: '홍익대학교', department: '산업공학과', admissionType: '정시(가)', cutline: 5.8, probability: 48, region: '서울' },
-    { university: '국민대학교', department: '산업공학과', admissionType: '정시(가)', cutline: 6.2, probability: 43, region: '서울' },
-    { university: '세종대학교', department: '산업공학과', admissionType: '정시(가)', cutline: 6.8, probability: 38, region: '서울' },
-    { university: '광운대학교', department: '산업공학과', admissionType: '정시(가)', cutline: 7.2, probability: 33, region: '서울' },
-    { university: '명지대학교', department: '산업공학과', admissionType: '정시(가)', cutline: 7.8, probability: 28, region: '서울' },
-    { university: '숭실대학교', department: '산업공학과', admissionType: '정시(가)', cutline: 8.2, probability: 23, region: '서울' },
-    { university: '인하대학교', department: '산업공학과', admissionType: '정시(가)', cutline: 8.8, probability: 18, region: '인천' },
-    
-    // 정시 대학들 (약학과)
-    { university: '서울대학교', department: '약학과', admissionType: '정시(가)', cutline: 1.5, probability: 92, region: '서울' },
-    { university: '연세대학교', department: '약학과', admissionType: '정시(가)', cutline: 1.8, probability: 87, region: '서울' },
-    { university: '고려대학교', department: '약학과', admissionType: '정시(가)', cutline: 2.2, probability: 82, region: '서울' },
-    { university: '성균관대학교', department: '약학과', admissionType: '정시(가)', cutline: 2.5, probability: 77, region: '서울' },
-    { university: '한양대학교', department: '약학과', admissionType: '정시(가)', cutline: 2.8, probability: 72, region: '서울' },
-    { university: '중앙대학교', department: '약학과', admissionType: '정시(가)', cutline: 3.2, probability: 67, region: '서울' },
-    { university: '경희대학교', department: '약학과', admissionType: '정시(가)', cutline: 3.5, probability: 62, region: '서울' },
-    { university: '동국대학교', department: '약학과', admissionType: '정시(가)', cutline: 3.8, probability: 57, region: '서울' },
-    { university: '홍익대학교', department: '약학과', admissionType: '정시(가)', cutline: 4.2, probability: 52, region: '서울' },
-    { university: '국민대학교', department: '약학과', admissionType: '정시(가)', cutline: 4.5, probability: 47, region: '서울' },
-    { university: '세종대학교', department: '약학과', admissionType: '정시(가)', cutline: 5.0, probability: 42, region: '서울' },
-    { university: '광운대학교', department: '약학과', admissionType: '정시(가)', cutline: 5.5, probability: 37, region: '서울' },
-    { university: '명지대학교', department: '약학과', admissionType: '정시(가)', cutline: 6.0, probability: 32, region: '서울' },
-    { university: '숭실대학교', department: '약학과', admissionType: '정시(가)', cutline: 6.5, probability: 27, region: '서울' },
-    { university: '인하대학교', department: '약학과', admissionType: '정시(가)', cutline: 7.0, probability: 22, region: '인천' }
-  ]
+  // CSV 데이터에서 실제 대학 정보 읽기
+  const universities = await loadUniversityDataFromCSV(preferredMajors)
+  console.log('로드된 대학 수:', universities.length)
+  
+  // CSV 데이터가 없으면 빈 배열 반환
+  if (universities.length === 0) {
+    console.log('CSV에서 매칭되는 대학이 없습니다.')
+    return []
+  }
   
   // 지망학과에 따른 필터링
   console.log('전체 대학 수:', universities.length)
@@ -294,100 +271,6 @@ app.use('*', cors({
 // OPTIONS 요청 처리
 app.options('*', (c) => {
   return c.text('', 200)
-})
-
-// 간단한 헬스체크
-app.get('/server/health', (c) => {
-  return c.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    message: 'Edge Function is working!'
-  })
-})
-
-// 간단한 CSV 파일 목록 (빈 배열 반환)
-app.get('/server/csv-files/:type', (c) => {
-  const type = c.req.param('type')
-  return c.json({ 
-    files: [],
-    type: type,
-    message: 'No files uploaded yet'
-  })
-})
-
-// 간단한 CSV 업로드 (모의 응답)
-app.post('/server/upload-csv-file/:type', async (c) => {
-  const type = c.req.param('type')
-  const body = await c.req.json()
-  
-  return c.json({ 
-    success: true,
-    message: `Mock upload for ${type}`,
-    filename: body.filename || 'test.csv',
-    count: body.csvData?.length || 0
-  })
-})
-
-// 간단한 CSV 데이터 (빈 배열 반환)
-app.get('/server/csv-data/:type/:fileId', (c) => {
-  const type = c.req.param('type')
-  const fileId = c.req.param('fileId')
-  
-  return c.json({ 
-    data: [],
-    type: type,
-    fileId: fileId,
-    message: 'No data available'
-  })
-})
-
-// 기타 엔드포인트들 (모의 응답)
-app.post('/server/apply-csv-file/:type/:fileId', (c) => {
-  return c.json({ success: true, message: 'Mock apply' })
-})
-
-app.delete('/server/csv-file/:type/:fileId', (c) => {
-  return c.json({ success: true, message: 'Mock delete' })
-})
-
-app.get('/server/university-data/:type', (c) => {
-  return c.json({ data: [] })
-})
-
-app.post('/server/upload-csv', (c) => {
-  return c.json({ success: true, message: 'Mock upload' })
-})
-
-app.get('/server/university-data', (c) => {
-  return c.json({ data: [] })
-})
-
-app.post('/server/save-scores', (c) => {
-  return c.json({ success: true })
-})
-
-app.get('/server/my-scores', (c) => {
-  return c.json({ scores: null })
-})
-
-app.get('/server/all-scores', (c) => {
-  return c.json({ scores: [] })
-})
-
-app.delete('/server/delete-user-scores/:userId', (c) => {
-  return c.json({ success: true })
-})
-
-app.post('/server/signup', (c) => {
-  return c.json({ success: true, message: 'Mock signup' })
-})
-
-app.post('/server/signin', (c) => {
-  return c.json({ user: { id: 'mock', name: 'Mock User' } })
-})
-
-app.get('/server/auth/me', (c) => {
-  return c.json({ id: 'mock', name: 'Mock User' })
 })
 
 // 대학 추천 계산 엔드포인트
