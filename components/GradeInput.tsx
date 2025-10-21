@@ -71,6 +71,16 @@ interface SimpleGradeData {
   english: { [semester: string]: number };
   inquiry: { [semester: string]: number };
   specialtySubjects: { [semester: string]: number };
+  personalInfo?: {
+    name: string;
+    address: string;
+    schoolType: string;
+    trackType: string;
+    preferredMajor1: string;
+    preferredMajor2: string;
+    preferredMajor3: string;
+    customMajor?: string;
+  };
 }
 
 interface GradeInputProps {
@@ -651,6 +661,15 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
   // 개인정보 업데이트
   const updatePersonalInfo = (field: keyof StudentPersonalInfo, value: string) => {
     setGrades(prev => ({
+      ...prev,
+      personalInfo: {
+        ...prev.personalInfo,
+        [field]: value
+      }
+    }));
+
+    // simpleGradeData에도 개인정보 저장
+    setSimpleGrades(prev => ({
       ...prev,
       personalInfo: {
         ...prev.personalInfo,

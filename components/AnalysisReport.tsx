@@ -235,19 +235,32 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         },
         preferredUniversities: [],
         preferredMajors: [
-          grades?.personalInfo?.preferredMajor1,
-          grades?.personalInfo?.preferredMajor2, 
-          grades?.personalInfo?.preferredMajor3
+          simpleGradeData?.personalInfo?.preferredMajor1 || grades?.personalInfo?.preferredMajor1,
+          simpleGradeData?.personalInfo?.preferredMajor2 || grades?.personalInfo?.preferredMajor2, 
+          simpleGradeData?.personalInfo?.preferredMajor3 || grades?.personalInfo?.preferredMajor3
         ].filter(Boolean) || [], // 드롭박스에서 선택한 학과들
         preferredRegions: []
       };
 
       console.log('전송할 학생 데이터:', JSON.stringify(studentData, null, 2));
       console.log('지망학과 정보:', {
-        preferredMajor1: grades?.personalInfo?.preferredMajor1,
-        preferredMajor2: grades?.personalInfo?.preferredMajor2,
-        preferredMajor3: grades?.personalInfo?.preferredMajor3,
-        customMajor: grades?.personalInfo?.customMajor
+        fromSimpleGradeData: {
+          preferredMajor1: simpleGradeData?.personalInfo?.preferredMajor1,
+          preferredMajor2: simpleGradeData?.personalInfo?.preferredMajor2,
+          preferredMajor3: simpleGradeData?.personalInfo?.preferredMajor3,
+          customMajor: simpleGradeData?.personalInfo?.customMajor
+        },
+        fromGrades: {
+          preferredMajor1: grades?.personalInfo?.preferredMajor1,
+          preferredMajor2: grades?.personalInfo?.preferredMajor2,
+          preferredMajor3: grades?.personalInfo?.preferredMajor3,
+          customMajor: grades?.personalInfo?.customMajor
+        },
+        finalPreferredMajors: [
+          simpleGradeData?.personalInfo?.preferredMajor1 || grades?.personalInfo?.preferredMajor1,
+          simpleGradeData?.personalInfo?.preferredMajor2 || grades?.personalInfo?.preferredMajor2, 
+          simpleGradeData?.personalInfo?.preferredMajor3 || grades?.personalInfo?.preferredMajor3
+        ].filter(Boolean)
       });
       
       const response = await fetch(`https://kgbcqvvkahugbrqlomjc.supabase.co/functions/v1/server/calculate-recommendations`, {
