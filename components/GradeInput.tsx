@@ -83,6 +83,7 @@ interface GradeInputProps {
   initialSimpleGrades?: SimpleGradeData | null;
   initialSimpleSuneung?: SimpleSuneungData | null;
   onBack: () => void;
+  onComplete?: () => void; // 입력 완료 시 호출될 함수 추가
 }
 
 const GRADE1_SUBJECTS = ['국어', '영어', '수학', '한국사', '사회', '과학'];
@@ -188,7 +189,7 @@ const createEmptyGradeData = (): GradeData => ({
   suneung: createEmptySuneungGrades()
 });
 
-export function GradeInput({ studentId, studentName, initialGrades, onSubmit, onSaveSimpleGrade, onSaveSimpleSuneung, initialSimpleGrades, initialSimpleSuneung, onBack }: GradeInputProps) {
+export function GradeInput({ studentId, studentName, initialGrades, onSubmit, onSaveSimpleGrade, onSaveSimpleSuneung, initialSimpleGrades, initialSimpleSuneung, onBack, onComplete }: GradeInputProps) {
   console.log('GradeInput 렌더링:', { studentId, studentName, initialGrades, initialSimpleGrades, initialSimpleSuneung });
   
   const [grades, setGrades] = useState<GradeData>(initialGrades || createEmptyGradeData());
@@ -267,6 +268,10 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
     grade3: 'semester1'
   });
 
+  // 자동저장 상태 관리
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
   useEffect(() => {
     if (initialGrades) {
       // 기존 데이터 호환성을 위한 처리
@@ -292,19 +297,46 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
     }
   }, [initialGrades, initialSimpleGrades]);
 
-  // 실시간 저장 - 간편 성적
+  // 실시간 저장 - 간편 성적 (디바운스 적용)
   useEffect(() => {
-    if (onSaveSimpleGrade && simpleGrades) {
-      onSaveSimpleGrade(simpleGrades);
-    }
+    setIsSaving(true);
+    const timeoutId = setTimeout(() => {
+      if (onSaveSimpleGrade && simpleGrades) {
+        onSaveSimpleGrade(simpleGrades);
+        setLastSaved(new Date());
+      }
+      setIsSaving(false);
+    }, 500); // 500ms 디바운스
+
+    return () => clearTimeout(timeoutId);
   }, [simpleGrades, onSaveSimpleGrade]);
 
-  // 실시간 저장 - 수능 성적
+  // 실시간 저장 - 수능 성적 (디바운스 적용)
   useEffect(() => {
-    if (onSaveSimpleSuneung && simpleSuneung) {
-      onSaveSimpleSuneung(simpleSuneung);
-    }
+    setIsSaving(true);
+    const timeoutId = setTimeout(() => {
+      if (onSaveSimpleSuneung && simpleSuneung) {
+        onSaveSimpleSuneung(simpleSuneung);
+        setLastSaved(new Date());
+      }
+      setIsSaving(false);
+    }, 500); // 500ms 디바운스
+
+    return () => clearTimeout(timeoutId);
   }, [simpleSuneung, onSaveSimpleSuneung]);
+
+  // 실시간 저장 - 개인정보 및 상세 성적 (디바운스 적용)
+  useEffect(() => {
+    setIsSaving(true);
+    const timeoutId = setTimeout(() => {
+      // 개인정보와 상세 성적도 실시간 저장
+      localStorage.setItem('universityApp_detailedGrades', JSON.stringify(grades));
+      setLastSaved(new Date());
+      setIsSaving(false);
+    }, 500); // 500ms 디바운스
+
+    return () => clearTimeout(timeoutId);
+  }, [grades]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -315,6 +347,25 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
       onSaveSimpleSuneung(simpleSuneung);
     } else {
       onSubmit(grades);
+    }
+  };
+
+  // 입력 완료 버튼 클릭 핸들러
+  const handleComplete = () => {
+    // 최종 저장
+    if (onSaveSimpleGrade && simpleGrades) {
+      onSaveSimpleGrade(simpleGrades);
+    }
+    if (onSaveSimpleSuneung && simpleSuneung) {
+      onSaveSimpleSuneung(simpleSuneung);
+    }
+    
+    // 상세 성적도 저장
+    localStorage.setItem('universityApp_detailedGrades', JSON.stringify(grades));
+    
+    // 분석리포트 페이지로 이동
+    if (onComplete) {
+      onComplete();
     }
   };
 
@@ -1117,6 +1168,28 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
           </Button>
           <h1 className="text-3xl mb-2 text-navy-900">성적 입력</h1>
           <p className="text-navy-600">안녕하세요, {studentName}님! 개인정보와 성적 정보를 입력해주세요.</p>
+          
+          {/* 자동저장 상태 표시 */}
+          <div className="mt-4 p-3 bg-navy-50 rounded-lg border border-navy-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                {isSaving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-navy-300 border-t-navy-600"></div>
+                    <span className="text-sm text-navy-600">자동 저장 중...</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-navy-600">
+                      {lastSaved ? `마지막 저장: ${lastSaved.toLocaleTimeString()}` : '저장 준비됨'}
+                    </span>
+                  </>
+                )}
+              </div>
+              <span className="text-xs text-navy-500">💾 모든 변경사항이 자동으로 저장됩니다</span>
+            </div>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -1163,6 +1236,25 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
               {renderSimpleSuneungSection()}
             </TabsContent>
           </Tabs>
+
+          {/* 입력 완료 버튼 */}
+          <div className="mt-8 p-6 bg-white rounded-lg shadow-lg border border-navy-200">
+            <div className="text-center">
+              <h3 className="text-lg font-medium text-navy-800 mb-2">성적 입력 완료</h3>
+              <p className="text-navy-600 mb-4">
+                모든 성적 정보가 실시간으로 저장되었습니다. 아래 버튼을 클릭하여 분석 리포트를 확인하세요.
+              </p>
+              <Button 
+                onClick={handleComplete}
+                className="bg-gold-500 hover:bg-gold-600 text-white px-8 py-3 text-lg font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+              >
+                📊 분석 리포트 보기
+              </Button>
+              <p className="text-sm text-navy-500 mt-3">
+                💡 입력한 모든 데이터는 자동으로 저장되어 언제든지 수정할 수 있습니다.
+              </p>
+            </div>
+          </div>
 
         </form>
       </div>

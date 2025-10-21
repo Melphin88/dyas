@@ -482,6 +482,7 @@ function App() {
             initialSimpleGrades={simpleGradeData}
             initialSimpleSuneung={simpleSuneungData}
             onBack={() => setCurrentView('login')}
+            onComplete={() => setCurrentView('report')}
           />
         )}
 
