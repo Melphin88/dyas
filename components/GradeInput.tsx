@@ -757,11 +757,30 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
 
   // 지망학과 선택 처리 함수
   const handleMajorSelection = (field: 'preferredMajor1' | 'preferredMajor2' | 'preferredMajor3', value: string) => {
+    console.log('지망학과 선택:', { field, value });
+    
+    // 먼저 선택된 학과 업데이트
     updatePersonalInfo(field, value);
     
     // "기타(직접입력)"을 선택하지 않으면 customMajor 필드 초기화
     if (value !== '기타(직접입력)') {
-      updatePersonalInfo('customMajor', '');
+      console.log('customMajor 초기화');
+      // customMajor만 별도로 업데이트 (다른 필드에 영향 주지 않음)
+      setGrades(prev => ({
+        ...prev,
+        personalInfo: {
+          ...prev.personalInfo,
+          customMajor: ''
+        }
+      }));
+      
+      setSimpleGrades(prev => ({
+        ...prev,
+        personalInfo: {
+          ...prev.personalInfo,
+          customMajor: ''
+        }
+      }));
     }
   };
 
@@ -769,6 +788,12 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
   const renderMajorSelect = (field: 'preferredMajor1' | 'preferredMajor2' | 'preferredMajor3', label: string) => {
     const selectedValue = grades.personalInfo[field];
     const showCustomInput = selectedValue === '기타(직접입력)';
+    
+    console.log(`지망학과 렌더링 (${field}):`, {
+      selectedValue,
+      showCustomInput,
+      allPersonalInfo: grades.personalInfo
+    });
     
     return (
       <div className="space-y-2">
