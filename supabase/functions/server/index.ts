@@ -135,8 +135,36 @@ async function calculateUniversityRecommendations(studentData: any, preferredMaj
     finalUniversities = universities.slice(0, 30) // 상위 30개 대학
   }
   
-  // 학생 성적 추출 (간단한 예시)
-  const studentGrade = studentData.schoolGrades?.average || 3.5 // 기본값
+  // 학생 성적 추출 (더 현실적인 계산)
+  let studentGrade = 3.5 // 기본값
+  
+  // simpleGradeData에서 성적 계산
+  if (studentData.schoolGrades) {
+    const grades = studentData.schoolGrades
+    const allGrades = []
+    
+    // 각 학년별 성적 수집
+    Object.keys(grades).forEach(gradeLevel => {
+      if (grades[gradeLevel] && typeof grades[gradeLevel] === 'object') {
+        Object.keys(grades[gradeLevel]).forEach(semester => {
+          if (grades[gradeLevel][semester] && typeof grades[gradeLevel][semester] === 'object') {
+            Object.keys(grades[gradeLevel][semester]).forEach(subject => {
+              const subjectData = grades[gradeLevel][semester][subject]
+              if (subjectData && typeof subjectData === 'object' && subjectData.grade) {
+                allGrades.push(subjectData.grade)
+              }
+            })
+          }
+        })
+      }
+    })
+    
+    if (allGrades.length > 0) {
+      studentGrade = allGrades.reduce((sum, grade) => sum + grade, 0) / allGrades.length
+    }
+  }
+  
+  console.log('계산된 학생 성적:', studentGrade)
   
   // 성적과 커트라인 차이에 따른 정렬 및 합격율 계산
   const sortedUniversities = finalUniversities
@@ -144,14 +172,24 @@ async function calculateUniversityRecommendations(studentData: any, preferredMaj
       const gradeDifference = Math.abs(uni.cutline - studentGrade)
       const matchScore = Math.max(0, 100 - gradeDifference * 20)
       
-      // 합격율 계산 (학생 성적이 커트라인보다 좋으면 100% 이상)
-      let admissionRate = 100
-      if (studentGrade > uni.cutline) {
-        // 학생 성적이 커트라인보다 좋으면 안정권
-        admissionRate = Math.min(100, 100 + (uni.cutline - studentGrade) * 15)
+      // 합격율 계산 (더 현실적인 계산)
+      let admissionRate = 50 // 기본값
+      
+      if (studentGrade <= uni.cutline) {
+        // 학생 성적이 커트라인보다 좋거나 같으면 안정권
+        admissionRate = Math.min(95, 80 + (uni.cutline - studentGrade) * 10)
       } else {
         // 학생 성적이 커트라인보다 낮으면 도전권
-        admissionRate = Math.max(0, 100 - (studentGrade - uni.cutline) * 25)
+        const gap = studentGrade - uni.cutline
+        if (gap <= 0.5) {
+          admissionRate = 60 // 약간 도전
+        } else if (gap <= 1.0) {
+          admissionRate = 40 // 도전
+        } else if (gap <= 1.5) {
+          admissionRate = 25 // 상당한 도전
+        } else {
+          admissionRate = 10 // 매우 도전적
+        }
       }
       
       return {
@@ -171,7 +209,7 @@ async function calculateUniversityRecommendations(studentData: any, preferredMaj
       university: uni.university,
       department: uni.department,
       admissionType: uni.admissionType,
-      probability: uni.admissionRate, // 합격율로 변경
+      probability: Math.max(0, Math.min(100, uni.admissionRate)), // 0-100% 범위로 제한
       matchScore: uni.matchScore,
       requirements: {
         minInternalGrade: uni.cutline,
@@ -189,7 +227,7 @@ async function calculateUniversityRecommendations(studentData: any, preferredMaj
       university: uni.university,
       department: uni.department,
       admissionType: uni.admissionType,
-      probability: uni.admissionRate, // 합격율로 변경
+      probability: Math.max(0, Math.min(100, uni.admissionRate)), // 0-100% 범위로 제한
       matchScore: uni.matchScore,
       requirements: {
         minSuneungGrade: uni.cutline,
@@ -205,6 +243,8 @@ async function calculateUniversityRecommendations(studentData: any, preferredMaj
   console.log('최종 추천 대학 수:', allRecommendations.length)
   console.log('수시 추천:', susiRecommendations.length)
   console.log('정시 추천:', jeongsiRecommendations.length)
+  console.log('정시 대학 필터링 결과:', sortedUniversities.filter(uni => uni.admissionType.includes('정시')).length)
+  console.log('전체 정시 대학 수:', finalUniversities.filter(uni => uni.admissionType.includes('정시')).length)
   
   return allRecommendations
 }
