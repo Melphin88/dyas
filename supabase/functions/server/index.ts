@@ -17,7 +17,10 @@ app.use('*', cors({
     'Authorization', 
     'X-Requested-With',
     'Accept',
-    'Origin'
+    'Origin',
+    'Access-Control-Allow-Origin',
+    'Access-Control-Allow-Methods',
+    'Access-Control-Allow-Headers'
   ],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
@@ -126,6 +129,10 @@ app.get('/server/auth/me', (c) => {
 // 대학 추천 계산 엔드포인트
 app.post('/server/calculate-recommendations', async (c) => {
   try {
+    console.log('=== calculate-recommendations 엔드포인트 호출됨 ===')
+    console.log('요청 헤더:', c.req.header())
+    console.log('요청 메서드:', c.req.method)
+    
     const body = await c.req.json()
     const { studentData, debugMode } = body
     
