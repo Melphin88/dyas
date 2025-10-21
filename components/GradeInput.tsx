@@ -212,7 +212,17 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
     math: {},
     english: {},
     inquiry: {},
-    specialtySubjects: {}
+    specialtySubjects: {},
+    personalInfo: {
+      name: '',
+      address: '',
+      schoolType: '',
+      trackType: '',
+      preferredMajor1: '',
+      preferredMajor2: '',
+      preferredMajor3: '',
+      customMajor: ''
+    }
   });
 
   // 간단한 수능 성적 입력 상태 - 안전한 초기화
@@ -786,13 +796,17 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
 
   // 지망학과 렌더링 함수
   const renderMajorSelect = (field: 'preferredMajor1' | 'preferredMajor2' | 'preferredMajor3', label: string) => {
-    const selectedValue = grades.personalInfo[field];
+    // simpleGradeData의 개인정보를 우선 사용
+    const selectedValue = simpleGrades.personalInfo?.[field] || grades.personalInfo[field];
     const showCustomInput = selectedValue === '기타(직접입력)';
     
     console.log(`지망학과 렌더링 (${field}):`, {
       selectedValue,
       showCustomInput,
-      allPersonalInfo: grades.personalInfo
+      fromSimpleGrades: simpleGrades.personalInfo?.[field],
+      fromGrades: grades.personalInfo[field],
+      allSimplePersonalInfo: simpleGrades.personalInfo,
+      allGradesPersonalInfo: grades.personalInfo
     });
     
     return (
@@ -812,7 +826,7 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
         {showCustomInput && (
           <Input
             placeholder="희망 학과를 직접 입력하세요"
-            value={grades.personalInfo.customMajor || ''}
+            value={simpleGrades.personalInfo?.customMajor || grades.personalInfo.customMajor || ''}
             onChange={(e) => updatePersonalInfo('customMajor', e.target.value)}
             className="border-navy-200 focus:border-gold-500 focus:ring-gold-500"
           />
