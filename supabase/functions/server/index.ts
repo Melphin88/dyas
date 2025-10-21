@@ -131,8 +131,37 @@ async function calculateUniversityRecommendations(studentData: any, preferredMaj
   // 학생 성적 추출 (더 현실적인 계산)
   let studentGrade = 3.5 // 기본값
   
-  // simpleGradeData에서 성적 계산
-  if (studentData.schoolGrades) {
+  console.log('학생 데이터 구조 확인:', {
+    hasSchoolGrades: !!studentData.schoolGrades,
+    hasSimpleGrades: !!studentData.simpleGrades,
+    schoolGradesKeys: studentData.schoolGrades ? Object.keys(studentData.schoolGrades) : [],
+    simpleGradesKeys: studentData.simpleGrades ? Object.keys(studentData.simpleGrades) : []
+  })
+  
+  // simpleGradeData에서 성적 계산 (우선순위)
+  if (studentData.simpleGrades) {
+    const simpleGrades = studentData.simpleGrades
+    const allGrades = []
+    
+    // 각 과목별 성적 수집
+    Object.keys(simpleGrades).forEach(subject => {
+      if (subject !== 'personalInfo' && simpleGrades[subject] && typeof simpleGrades[subject] === 'object') {
+        Object.keys(simpleGrades[subject]).forEach(semester => {
+          const grade = simpleGrades[subject][semester]
+          if (grade && !isNaN(parseFloat(grade))) {
+            allGrades.push(parseFloat(grade))
+          }
+        })
+      }
+    })
+    
+    if (allGrades.length > 0) {
+      studentGrade = allGrades.reduce((sum, grade) => sum + grade, 0) / allGrades.length
+      console.log('simpleGrades에서 계산된 성적:', studentGrade, '총 성적 수:', allGrades.length)
+    }
+  }
+  // schoolGrades에서 성적 계산 (fallback)
+  else if (studentData.schoolGrades) {
     const grades = studentData.schoolGrades
     const allGrades = []
     
@@ -154,6 +183,7 @@ async function calculateUniversityRecommendations(studentData: any, preferredMaj
     
     if (allGrades.length > 0) {
       studentGrade = allGrades.reduce((sum, grade) => sum + grade, 0) / allGrades.length
+      console.log('schoolGrades에서 계산된 성적:', studentGrade, '총 성적 수:', allGrades.length)
     }
   }
   
@@ -162,18 +192,22 @@ async function calculateUniversityRecommendations(studentData: any, preferredMaj
   // 성적과 커트라인 차이에 따른 정렬 및 합격율 계산
   const sortedUniversities = finalUniversities
     .map(uni => {
-      const gradeDifference = Math.abs(uni.cutline - studentGrade)
+      // 안전한 숫자 변환
+      const cutline = parseFloat(uni.cutline) || 0
+      const studentGradeNum = parseFloat(studentGrade) || 3.5
+      
+      const gradeDifference = Math.abs(cutline - studentGradeNum)
       const matchScore = Math.max(0, 100 - gradeDifference * 20)
       
       // 합격율 계산 (더 현실적인 계산)
       let admissionRate = 50 // 기본값
       
-      if (studentGrade <= uni.cutline) {
+      if (studentGradeNum <= cutline) {
         // 학생 성적이 커트라인보다 좋거나 같으면 안정권
-        admissionRate = Math.min(95, 80 + (uni.cutline - studentGrade) * 10)
+        admissionRate = Math.min(95, 80 + (cutline - studentGradeNum) * 10)
       } else {
         // 학생 성적이 커트라인보다 낮으면 도전권
-        const gap = studentGrade - uni.cutline
+        const gap = studentGradeNum - cutline
         if (gap <= 0.5) {
           admissionRate = 60 // 약간 도전
         } else if (gap <= 1.0) {
@@ -185,16 +219,25 @@ async function calculateUniversityRecommendations(studentData: any, preferredMaj
         }
       }
       
+      // NaN 체크 및 안전한 반올림
+      const finalAdmissionRate = isNaN(admissionRate) ? 50 : Math.round(admissionRate)
+      
+      console.log(`대학: ${uni.university} ${uni.department}, 커트라인: ${cutline}, 학생성적: ${studentGradeNum}, 차이: ${gradeDifference}, 합격율: ${finalAdmissionRate}`)
+      
       return {
         ...uni,
         gradeDifference,
         matchScore,
-        admissionRate: Math.round(admissionRate)
+        admissionRate: finalAdmissionRate
       }
     })
     .sort((a, b) => a.gradeDifference - b.gradeDifference) // 커트라인과 가까운 순으로 정렬
   
   // 수시 20개, 정시 10개로 제한
+  console.log('정렬된 대학 수:', sortedUniversities.length)
+  console.log('수시 대학 수:', sortedUniversities.filter(uni => uni.admissionType.includes('수시')).length)
+  console.log('정시 대학 수:', sortedUniversities.filter(uni => uni.admissionType.includes('정시')).length)
+  
   const susiRecommendations = sortedUniversities
     .filter(uni => uni.admissionType.includes('수시'))
     .slice(0, 20)
