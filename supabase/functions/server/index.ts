@@ -112,19 +112,34 @@ async function calculateUniversityRecommendations(studentData: any, preferredMaj
   ]
   
   // 지망학과에 따른 필터링
+  console.log('전체 대학 수:', universities.length)
+  console.log('지망학과 목록:', preferredMajors)
+  
   const filteredUniversities = universities.filter(uni => {
-    return preferredMajors.some(major => 
+    const matches = preferredMajors.some(major => 
       uni.department.includes(major) || major.includes(uni.department)
     )
+    if (matches) {
+      console.log(`매칭된 대학: ${uni.university} ${uni.department}`)
+    }
+    return matches
   })
   
   console.log('필터링된 대학 수:', filteredUniversities.length)
+  console.log('필터링된 대학 목록:', filteredUniversities.map(uni => `${uni.university} ${uni.department}`))
+  
+  // 필터링된 대학이 없으면 기본 추천 대학 제공
+  let finalUniversities = filteredUniversities
+  if (filteredUniversities.length === 0) {
+    console.log('필터링된 대학이 없어서 기본 추천 대학을 제공합니다.')
+    finalUniversities = universities.slice(0, 30) // 상위 30개 대학
+  }
   
   // 학생 성적 추출 (간단한 예시)
   const studentGrade = studentData.schoolGrades?.average || 3.5 // 기본값
   
   // 성적과 커트라인 차이에 따른 정렬 및 합격율 계산
-  const sortedUniversities = filteredUniversities
+  const sortedUniversities = finalUniversities
     .map(uni => {
       const gradeDifference = Math.abs(uni.cutline - studentGrade)
       const matchScore = Math.max(0, 100 - gradeDifference * 20)
