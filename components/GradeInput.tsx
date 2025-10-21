@@ -300,6 +300,23 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
       }
       
       setGrades(updatedGrades);
+      
+      // simpleGradeData에도 개인정보 복사
+      if (updatedGrades.personalInfo) {
+        setSimpleGrades(prev => ({
+          ...prev,
+          personalInfo: {
+            name: updatedGrades.personalInfo.name,
+            address: updatedGrades.personalInfo.address,
+            schoolType: updatedGrades.personalInfo.schoolType,
+            trackType: updatedGrades.personalInfo.trackType,
+            preferredMajor1: updatedGrades.personalInfo.preferredMajor1,
+            preferredMajor2: updatedGrades.personalInfo.preferredMajor2,
+            preferredMajor3: updatedGrades.personalInfo.preferredMajor3,
+            customMajor: updatedGrades.personalInfo.customMajor || ''
+          }
+        }));
+      }
     }
 
     if (initialSimpleGrades) {
@@ -660,6 +677,8 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
 
   // 개인정보 업데이트
   const updatePersonalInfo = (field: keyof StudentPersonalInfo, value: string) => {
+    console.log('개인정보 업데이트:', { field, value });
+    
     setGrades(prev => ({
       ...prev,
       personalInfo: {
@@ -669,13 +688,26 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
     }));
 
     // simpleGradeData에도 개인정보 저장
-    setSimpleGrades(prev => ({
-      ...prev,
-      personalInfo: {
-        ...prev.personalInfo,
+    setSimpleGrades(prev => {
+      const newPersonalInfo = {
+        name: prev.personalInfo?.name || '',
+        address: prev.personalInfo?.address || '',
+        schoolType: prev.personalInfo?.schoolType || '',
+        trackType: prev.personalInfo?.trackType || '',
+        preferredMajor1: prev.personalInfo?.preferredMajor1 || '',
+        preferredMajor2: prev.personalInfo?.preferredMajor2 || '',
+        preferredMajor3: prev.personalInfo?.preferredMajor3 || '',
+        customMajor: prev.personalInfo?.customMajor || '',
         [field]: value
-      }
-    }));
+      };
+      
+      console.log('simpleGradeData 개인정보 업데이트:', newPersonalInfo);
+      
+      return {
+        ...prev,
+        personalInfo: newPersonalInfo
+      };
+    });
   };
 
   // 내신 성적 업데이트 (원점수 포함)
