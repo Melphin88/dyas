@@ -33,10 +33,13 @@ async function loadUniversityDataFromCSV(preferredMajors: string[]) {
       )
       
       if (isMatchingMajor && grade70Cut && !isNaN(parseFloat(grade70Cut))) {
+        // 수시 데이터인지 확인 (정시가 아닌 경우)
+        const isSusi = !admissionType.includes('정시') && !admissionType.includes('가')
+        
         universities.push({
           university: university.trim(),
           department: department.trim(),
-          admissionType: admissionType.trim(),
+          admissionType: isSusi ? '수시(교과)' : admissionType.trim(),
           cutline: parseFloat(grade70Cut),
           region: region.trim(),
           year: parseInt(year) || 2023,
@@ -44,6 +47,10 @@ async function loadUniversityDataFromCSV(preferredMajors: string[]) {
           competitionRate: parseFloat(competitionRate) || 0,
           category: category.trim()
         })
+        
+        if (isSusi) {
+          console.log(`수시 대학 추가: ${university.trim()} ${department.trim()}`)
+        }
       }
     }
     
@@ -62,10 +69,11 @@ async function loadUniversityDataFromCSV(preferredMajors: string[]) {
       )
       
       if (isMatchingMajor && grade70Cut && !isNaN(parseFloat(grade70Cut))) {
+        // 정시 데이터로 강제 설정
         universities.push({
           university: university.trim(),
           department: department.trim(),
-          admissionType: admissionType.trim(),
+          admissionType: '정시(가)',
           cutline: parseFloat(grade70Cut),
           region: region.trim(),
           year: parseInt(year) || 2023,
@@ -73,6 +81,8 @@ async function loadUniversityDataFromCSV(preferredMajors: string[]) {
           competitionRate: parseFloat(competitionRate) || 0,
           category: category.trim()
         })
+        
+        console.log(`정시 대학 추가: ${university.trim()} ${department.trim()}`)
       }
     }
     
@@ -241,38 +251,48 @@ async function calculateUniversityRecommendations(studentData: any, preferredMaj
   const susiRecommendations = sortedUniversities
     .filter(uni => uni.admissionType.includes('수시'))
     .slice(0, 20)
-    .map(uni => ({
-      university: uni.university,
-      department: uni.department,
-      admissionType: uni.admissionType,
-      probability: Math.max(0, Math.min(100, uni.admissionRate)), // 0-100% 범위로 제한
-      matchScore: uni.matchScore,
-      requirements: {
-        minInternalGrade: uni.cutline,
-        requiredSubjects: ['국어', '수학', '영어']
-      },
-      admissionStrategy: '내신 성적 기반 추천',
-      competitionAnalysis: `커트라인 ${uni.cutline}등급, 현재 성적과의 차이: ${uni.gradeDifference.toFixed(1)}등급`,
-      recommendation: uni.admissionRate >= 80 ? 'optimal' : uni.admissionRate >= 60 ? 'safe' : 'challenge'
-    }))
+    .map(uni => {
+      const probability = Math.max(0, Math.min(100, uni.admissionRate || 50))
+      console.log(`수시 추천: ${uni.university} ${uni.department}, 합격율: ${probability}%`)
+      
+      return {
+        university: uni.university,
+        department: uni.department,
+        admissionType: uni.admissionType,
+        probability: probability, // 0-100% 범위로 제한
+        matchScore: uni.matchScore || 0,
+        requirements: {
+          minInternalGrade: uni.cutline || 0,
+          requiredSubjects: ['국어', '수학', '영어']
+        },
+        admissionStrategy: '내신 성적 기반 추천',
+        competitionAnalysis: `커트라인 ${uni.cutline}등급, 현재 성적과의 차이: ${(uni.gradeDifference || 0).toFixed(1)}등급`,
+        recommendation: probability >= 80 ? 'optimal' : probability >= 60 ? 'safe' : 'challenge'
+      }
+    })
   
   const jeongsiRecommendations = sortedUniversities
     .filter(uni => uni.admissionType.includes('정시'))
     .slice(0, 10)
-    .map(uni => ({
-      university: uni.university,
-      department: uni.department,
-      admissionType: uni.admissionType,
-      probability: Math.max(0, Math.min(100, uni.admissionRate)), // 0-100% 범위로 제한
-      matchScore: uni.matchScore,
-      requirements: {
-        minSuneungGrade: uni.cutline,
-        requiredSubjects: ['국어', '수학', '영어']
-      },
-      admissionStrategy: '수능 성적 기반 추천',
-      competitionAnalysis: `커트라인 ${uni.cutline}등급, 현재 성적과의 차이: ${uni.gradeDifference.toFixed(1)}등급`,
-      recommendation: uni.admissionRate >= 80 ? 'optimal' : uni.admissionRate >= 60 ? 'safe' : 'challenge'
-    }))
+    .map(uni => {
+      const probability = Math.max(0, Math.min(100, uni.admissionRate || 50))
+      console.log(`정시 추천: ${uni.university} ${uni.department}, 합격율: ${probability}%`)
+      
+      return {
+        university: uni.university,
+        department: uni.department,
+        admissionType: uni.admissionType,
+        probability: probability, // 0-100% 범위로 제한
+        matchScore: uni.matchScore || 0,
+        requirements: {
+          minSuneungGrade: uni.cutline || 0,
+          requiredSubjects: ['국어', '수학', '영어']
+        },
+        admissionStrategy: '수능 성적 기반 추천',
+        competitionAnalysis: `커트라인 ${uni.cutline}등급, 현재 성적과의 차이: ${(uni.gradeDifference || 0).toFixed(1)}등급`,
+        recommendation: probability >= 80 ? 'optimal' : probability >= 60 ? 'safe' : 'challenge'
+      }
+    })
   
   const allRecommendations = [...susiRecommendations, ...jeongsiRecommendations]
   
