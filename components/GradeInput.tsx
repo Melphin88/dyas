@@ -366,14 +366,16 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
   useEffect(() => {
     setIsSaving(true);
     const timeoutId = setTimeout(() => {
-      // 개인정보와 상세 성적도 실시간 저장
-      localStorage.setItem('universityApp_detailedGrades', JSON.stringify(grades));
+      // 상세 성적도 실시간으로 Supabase에 저장
+      if (onSubmit && grades) {
+        onSubmit(grades);
+      }
       setLastSaved(new Date());
       setIsSaving(false);
-    }, 500); // 500ms 디바운스
+    }, 1000); // 1초 디바운스 (상세 성적은 데이터가 크므로 조금 더 긴 디바운스)
 
     return () => clearTimeout(timeoutId);
-  }, [grades]);
+  }, [grades, onSubmit]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -389,7 +391,7 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
 
   // 입력 완료 버튼 클릭 핸들러
   const handleComplete = () => {
-    // 최종 저장
+    // 최종 저장 (App.tsx의 handleSaveSimpleGrade/handleSaveSimpleSuneung이 Supabase에 저장)
     if (onSaveSimpleGrade && simpleGrades) {
       onSaveSimpleGrade(simpleGrades);
     }
@@ -397,8 +399,10 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
       onSaveSimpleSuneung(simpleSuneung);
     }
     
-    // 상세 성적도 저장
-    localStorage.setItem('universityApp_detailedGrades', JSON.stringify(grades));
+    // 상세 성적도 저장 (onSubmit을 통해 App.tsx에서 Supabase에 저장됨)
+    if (onSubmit) {
+      onSubmit(grades);
+    }
     
     // 분석리포트 페이지로 이동
     if (onComplete) {

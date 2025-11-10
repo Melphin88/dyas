@@ -86,12 +86,15 @@ function App() {
     loadSupabaseAccounts(); // Supabase 계정 목록 로드 추가
   }, []);
 
-  // 로컬 저장된 간단 성적 로드
+  // 로컬 저장된 간단 성적 로드 (백업용, Supabase가 실패할 경우 사용)
   const loadLocalSimpleGrades = () => {
+    // Supabase에서 로드하는 것이 우선이므로, 로컬 스토리지는 백업용으로만 사용
+    // 실제 로드는 handleLogin에서 Supabase를 통해 수행
     const savedGrades = localStorage.getItem('universityApp_simpleGrades');
     const savedSuneung = localStorage.getItem('universityApp_suneungData');
     
-    if (savedGrades) {
+    // Supabase 데이터가 없을 때만 로컬 스토리지 사용
+    if (savedGrades && !simpleGradeData) {
       try {
         setSimpleGradeData(JSON.parse(savedGrades));
       } catch (error) {
@@ -99,7 +102,7 @@ function App() {
       }
     }
     
-    if (savedSuneung) {
+    if (savedSuneung && !simpleSuneungData) {
       try {
         const suneungData = JSON.parse(savedSuneung);
         
@@ -199,8 +202,16 @@ function App() {
 
   // 로그인 처리 (Supabase 연동)
   const handleLogin = async (account: any) => {
-    setCurrentUser(account);
+    // Supabase 계정의 경우 username을 id로 사용
+    const studentId = account.username || account.id;
+    const accountWithId = { ...account, id: studentId };
+    setCurrentUser(accountWithId);
     setIsAdmin(account.is_admin || false);
+    
+    // 학생인 경우 Supabase에서 성적 데이터 로드
+    if (!account.is_admin) {
+      await loadStudentGradesFromSupabase(studentId);
+    }
     
     if (account.is_admin) {
       setCurrentView('admin');
@@ -283,22 +294,158 @@ function App() {
   };
 
   // 학생 성적 업데이트
-  const handleUpdateStudentGrades = (studentId: string, grades: GradeData) => {
+  const handleUpdateStudentGrades = async (studentId: string, grades: GradeData) => {
     const newGrades = { ...studentGrades, [studentId]: grades };
     setStudentGrades(newGrades);
+    
+    // localStorage에도 저장 (백업용)
     localStorage.setItem('universityApp_studentGrades', JSON.stringify(newGrades));
+    
+    // Supabase에 저장
+    await saveStudentGradesToSupabase(
+      studentId,
+      undefined,
+      undefined,
+      grades
+    );
+  };
+
+  // Supabase에서 학생 성적 데이터 로드
+  const loadStudentGradesFromSupabase = async (studentId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('student_grades')
+        .select('*')
+        .eq('student_id', studentId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116은 데이터가 없을 때 발생
+        console.error('Supabase 성적 데이터 로드 오류:', error);
+        return;
+      }
+
+      if (data) {
+        console.log('Supabase에서 성적 데이터 로드 성공:', data);
+        
+        // 간단한 내신 성적 데이터 로드
+        if (data.simple_grade_data) {
+          setSimpleGradeData(data.simple_grade_data);
+        }
+        
+        // 간단한 수능 성적 데이터 로드
+        if (data.simple_suneung_data) {
+          setSimpleSuneungData(data.simple_suneung_data);
+        }
+        
+        // 상세 성적 데이터 로드
+        if (data.detailed_grade_data) {
+          setStudentGrades(prev => ({
+            ...prev,
+            [studentId]: data.detailed_grade_data
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Supabase 성적 데이터 로드 오류:', error);
+    }
+  };
+
+  // Supabase에 학생 성적 데이터 저장
+  const saveStudentGradesToSupabase = async (
+    studentId: string,
+    simpleGradeData?: SimpleGradeData | null,
+    simpleSuneungData?: SimpleSuneungData | null,
+    detailedGradeData?: GradeData | null
+  ) => {
+    try {
+      // 기존 데이터 확인
+      const { data: existingData } = await supabase
+        .from('student_grades')
+        .select('*')
+        .eq('student_id', studentId)
+        .single();
+
+      const dataToSave: any = {
+        student_id: studentId,
+        updated_at: new Date().toISOString()
+      };
+
+      // 각 데이터가 제공되면 업데이트
+      if (simpleGradeData !== undefined) {
+        dataToSave.simple_grade_data = simpleGradeData;
+      }
+      if (simpleSuneungData !== undefined) {
+        dataToSave.simple_suneung_data = simpleSuneungData;
+      }
+      if (detailedGradeData !== undefined) {
+        dataToSave.detailed_grade_data = detailedGradeData;
+      }
+
+      if (existingData) {
+        // 기존 데이터 업데이트
+        const { error } = await supabase
+          .from('student_grades')
+          .update(dataToSave)
+          .eq('student_id', studentId);
+
+        if (error) {
+          console.error('Supabase 성적 데이터 업데이트 오류:', error);
+        } else {
+          console.log('Supabase 성적 데이터 업데이트 성공');
+        }
+      } else {
+        // 새 데이터 삽입
+        const { error } = await supabase
+          .from('student_grades')
+          .insert(dataToSave);
+
+        if (error) {
+          console.error('Supabase 성적 데이터 삽입 오류:', error);
+        } else {
+          console.log('Supabase 성적 데이터 삽입 성공');
+        }
+      }
+    } catch (error) {
+      console.error('Supabase 성적 데이터 저장 오류:', error);
+    }
   };
 
   // 간단한 내신 성적 저장
   const handleSaveSimpleGrade = async (data: SimpleGradeData) => {
     setSimpleGradeData(data);
+    
+    // localStorage에도 저장 (백업용)
     localStorage.setItem('universityApp_simpleGrades', JSON.stringify(data));
+    
+    // Supabase에 저장
+    if (currentUser) {
+      const studentId = currentUser.id || currentUser.username;
+      await saveStudentGradesToSupabase(
+        studentId,
+        data,
+        undefined,
+        undefined
+      );
+    }
   };
 
   // 간단한 수능 성적 저장
   const handleSaveSimpleSuneung = async (data: SimpleSuneungData) => {
     setSimpleSuneungData(data);
+    
+    // localStorage에도 저장 (백업용)
     localStorage.setItem('universityApp_suneungData', JSON.stringify(data));
+    
+    // Supabase에 저장
+    if (currentUser) {
+      const studentId = currentUser.id || currentUser.username;
+      await saveStudentGradesToSupabase(
+        studentId,
+        undefined,
+        data,
+        undefined
+      );
+    }
   };
 
   // 인쇄 보고서 보기
@@ -470,12 +617,12 @@ function App() {
 
         {currentView === 'grade' && currentUser && (
           <GradeInput
-            studentId={currentUser.id}
+            studentId={currentUser.id || currentUser.username}
             studentName={currentUser.name}
-            initialGrades={studentGrades[currentUser.id]}
-            onSubmit={(grades) => {
-              handleUpdateStudentGrades(currentUser.id, grades);
-              setCurrentView('recommendations');
+            initialGrades={studentGrades[currentUser.id || currentUser.username]}
+            onSubmit={async (grades) => {
+              const studentId = currentUser.id || currentUser.username;
+              await handleUpdateStudentGrades(studentId, grades);
             }}
             onSaveSimpleGrade={handleSaveSimpleGrade}
             onSaveSimpleSuneung={handleSaveSimpleSuneung}
@@ -490,9 +637,9 @@ function App() {
 
         {currentView === 'report' && currentUser && (
           <AnalysisReport
-            studentId={currentUser.id}
+            studentId={currentUser.id || currentUser.username}
             studentName={currentUser.name}
-            grades={studentGrades[currentUser.id]}
+            grades={studentGrades[currentUser.id || currentUser.username]}
             simpleGradeData={simpleGradeData}
             simpleSuneungData={simpleSuneungData}
             onBack={() => setCurrentView('grade')}
