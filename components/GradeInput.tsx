@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -291,7 +291,14 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
   // 자동저장 상태 관리
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  
+  // 초기 로드 여부 추적 (초기 로드 시에는 저장하지 않음)
+  const isInitialMount = useRef(true);
+  const prevSimpleGradesRef = useRef<SimpleGradeData | null>(null);
+  const prevSimpleSuneungRef = useRef<SimpleSuneungData | null>(null);
+  const prevGradesRef = useRef<GradeData | null>(null);
 
+  // 초기 데이터 로드 (저장하지 않음)
   useEffect(() => {
     if (initialGrades) {
       // 기존 데이터 호환성을 위한 처리
@@ -310,11 +317,12 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
       }
       
       setGrades(updatedGrades);
+      prevGradesRef.current = updatedGrades;
       
       // simpleGradeData에도 개인정보 복사
       if (updatedGrades.personalInfo) {
-        setSimpleGrades(prev => ({
-          ...prev,
+        const updatedSimpleGrades = {
+          ...simpleGrades,
           personalInfo: {
             name: updatedGrades.personalInfo.name,
             address: updatedGrades.personalInfo.address,
@@ -325,54 +333,151 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
             preferredMajor3: updatedGrades.personalInfo.preferredMajor3,
             customMajor: updatedGrades.personalInfo.customMajor || ''
           }
-        }));
+        };
+        setSimpleGrades(updatedSimpleGrades);
+        prevSimpleGradesRef.current = updatedSimpleGrades;
       }
     }
 
     if (initialSimpleGrades) {
-      setSimpleGrades(initialSimpleGrades);
+      // initialSimpleGrades의 personalInfo가 있으면 그것을 사용
+      const mergedSimpleGrades = {
+        ...initialSimpleGrades,
+        personalInfo: initialSimpleGrades.personalInfo || simpleGrades.personalInfo || {
+          name: '',
+          address: '',
+          schoolType: '',
+          trackType: '',
+          preferredMajor1: '',
+          preferredMajor2: '',
+          preferredMajor3: '',
+          customMajor: ''
+        }
+      };
+      setSimpleGrades(mergedSimpleGrades);
+      prevSimpleGradesRef.current = mergedSimpleGrades;
     }
-  }, [initialGrades, initialSimpleGrades]);
+    
+    if (initialSimpleSuneung) {
+      const suneungData = getInitialSuneungData();
+      setSimpleSuneung(suneungData);
+      prevSimpleSuneungRef.current = suneungData;
+    }
+    
+    // 초기 로드 완료 표시
+    setTimeout(() => {
+      isInitialMount.current = false;
+    }, 1000);
+  }, [initialGrades, initialSimpleGrades, initialSimpleSuneung]);
 
-  // 실시간 저장 - 간편 성적 (디바운스 적용)
+  // 실시간 저장 - 간편 성적 (디바운스 적용, 실제 변경 시에만 저장)
   useEffect(() => {
+    // 초기 로드 중이거나 이전 값과 동일하면 저장하지 않음
+    if (isInitialMount.current) {
+      return;
+    }
+    
+    // 이전 값과 비교하여 실제로 변경되었는지 확인
+    const prevData = prevSimpleGradesRef.current;
+    if (prevData && JSON.stringify(prevData) === JSON.stringify(simpleGrades)) {
+      return;
+    }
+    
+    // 빈 데이터는 저장하지 않음
+    const hasData = simpleGrades.personalInfo?.name || 
+                    Object.keys(simpleGrades.korean || {}).length > 0 ||
+                    Object.keys(simpleGrades.math || {}).length > 0 ||
+                    Object.keys(simpleGrades.english || {}).length > 0 ||
+                    Object.keys(simpleGrades.inquiry || {}).length > 0 ||
+                    Object.keys(simpleGrades.specialtySubjects || {}).length > 0;
+    
+    if (!hasData) {
+      return;
+    }
+    
     setIsSaving(true);
     const timeoutId = setTimeout(() => {
       if (onSaveSimpleGrade && simpleGrades) {
         onSaveSimpleGrade(simpleGrades);
+        prevSimpleGradesRef.current = simpleGrades;
         setLastSaved(new Date());
       }
       setIsSaving(false);
-    }, 500); // 500ms 디바운스
+    }, 1000); // 1초 디바운스
 
     return () => clearTimeout(timeoutId);
   }, [simpleGrades, onSaveSimpleGrade]);
 
-  // 실시간 저장 - 수능 성적 (디바운스 적용)
+  // 실시간 저장 - 수능 성적 (디바운스 적용, 실제 변경 시에만 저장)
   useEffect(() => {
+    // 초기 로드 중이거나 이전 값과 동일하면 저장하지 않음
+    if (isInitialMount.current) {
+      return;
+    }
+    
+    // 이전 값과 비교하여 실제로 변경되었는지 확인
+    const prevData = prevSimpleSuneungRef.current;
+    if (prevData && JSON.stringify(prevData) === JSON.stringify(simpleSuneung)) {
+      return;
+    }
+    
+    // 빈 데이터는 저장하지 않음 (모든 값이 0이면 저장하지 않음)
+    const hasData = (simpleSuneung.korean?.grade || 0) > 0 ||
+                    (simpleSuneung.math?.grade || 0) > 0 ||
+                    (simpleSuneung.english?.grade || 0) > 0 ||
+                    (simpleSuneung.inquiry1?.grade || 0) > 0 ||
+                    (simpleSuneung.inquiry2?.grade || 0) > 0;
+    
+    if (!hasData) {
+      return;
+    }
+    
     setIsSaving(true);
     const timeoutId = setTimeout(() => {
       if (onSaveSimpleSuneung && simpleSuneung) {
         onSaveSimpleSuneung(simpleSuneung);
+        prevSimpleSuneungRef.current = simpleSuneung;
         setLastSaved(new Date());
       }
       setIsSaving(false);
-    }, 500); // 500ms 디바운스
+    }, 1000); // 1초 디바운스
 
     return () => clearTimeout(timeoutId);
   }, [simpleSuneung, onSaveSimpleSuneung]);
 
-  // 실시간 저장 - 개인정보 및 상세 성적 (디바운스 적용)
+  // 실시간 저장 - 개인정보 및 상세 성적 (디바운스 적용, 실제 변경 시에만 저장)
   useEffect(() => {
+    // 초기 로드 중이거나 이전 값과 동일하면 저장하지 않음
+    if (isInitialMount.current) {
+      return;
+    }
+    
+    // 이전 값과 비교하여 실제로 변경되었는지 확인
+    const prevData = prevGradesRef.current;
+    if (prevData && JSON.stringify(prevData) === JSON.stringify(grades)) {
+      return;
+    }
+    
+    // 빈 데이터는 저장하지 않음
+    const hasData = grades.personalInfo?.name || 
+                    Object.keys(grades.school?.grade1?.semester1 || {}).length > 0 ||
+                    Object.keys(grades.school?.grade2?.semester1 || {}).length > 0 ||
+                    Object.keys(grades.school?.grade3?.semester1 || {}).length > 0;
+    
+    if (!hasData) {
+      return;
+    }
+    
     setIsSaving(true);
     const timeoutId = setTimeout(() => {
       // 상세 성적도 실시간으로 Supabase에 저장
       if (onSubmit && grades) {
         onSubmit(grades);
+        prevGradesRef.current = grades;
+        setLastSaved(new Date());
       }
-      setLastSaved(new Date());
       setIsSaving(false);
-    }, 1000); // 1초 디바운스 (상세 성적은 데이터가 크므로 조금 더 긴 디바운스)
+    }, 1500); // 1.5초 디바운스 (상세 성적은 데이터가 크므로 조금 더 긴 디바운스)
 
     return () => clearTimeout(timeoutId);
   }, [grades, onSubmit]);
@@ -967,7 +1072,7 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
             <Label className="text-navy-600">이름</Label>
             <Input
               placeholder="학생 이름"
-              value={grades.personalInfo.name}
+              value={simpleGrades.personalInfo?.name || grades.personalInfo.name || ''}
               onChange={(e) => updatePersonalInfo('name', e.target.value)}
               className="border-navy-200 focus:border-gold-500 focus:ring-gold-500"
             />
@@ -980,7 +1085,7 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
             </Label>
             <Input
               placeholder="거주 지역"
-              value={grades.personalInfo.address}
+              value={simpleGrades.personalInfo?.address || grades.personalInfo.address || ''}
               onChange={(e) => updatePersonalInfo('address', e.target.value)}
               className="border-navy-200 focus:border-gold-500 focus:ring-gold-500"
             />
@@ -989,7 +1094,7 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
           {/* 학교 유형 */}
           <div className="space-y-2">
             <Label className="text-navy-600">학교 유형</Label>
-            <Select value={grades.personalInfo.schoolType} onValueChange={(value) => updatePersonalInfo('schoolType', value)}>
+            <Select value={simpleGrades.personalInfo?.schoolType || grades.personalInfo.schoolType || ''} onValueChange={(value) => updatePersonalInfo('schoolType', value)}>
               <SelectTrigger className="border-navy-200 focus:border-gold-500 focus:ring-gold-500">
                 <SelectValue placeholder="학교 유형을 선택하세요" />
               </SelectTrigger>
@@ -1004,7 +1109,7 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
           {/* 계열 */}
           <div className="space-y-2">
             <Label className="text-navy-600">계열</Label>
-            <Select value={grades.personalInfo.trackType} onValueChange={(value) => updatePersonalInfo('trackType', value)}>
+            <Select value={simpleGrades.personalInfo?.trackType || grades.personalInfo.trackType || ''} onValueChange={(value) => updatePersonalInfo('trackType', value)}>
               <SelectTrigger className="border-navy-200 focus:border-gold-500 focus:ring-gold-500">
                 <SelectValue placeholder="계열을 선택하세요" />
               </SelectTrigger>
