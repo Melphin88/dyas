@@ -380,6 +380,62 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
     }
   };
 
+  // 최신 수능 성적 데이터 가져오기
+  React.useEffect(() => {
+    const loadLatestExamGrades = async () => {
+      if (!studentId) return;
+
+      try {
+        // 가장 최신 성적 레코드 조회
+        const monthPriority: Record<string, number> = {
+          '수능': 7,
+          '10월': 6,
+          '9월': 5,
+          '7월': 4,
+          '6월': 3,
+          '4월': 2,
+          '3월': 1
+        };
+
+        const { data: allGrades, error } = await supabase
+          .from('student_grades')
+          .select('*')
+          .eq('student_id', studentId);
+
+        if (!error && allGrades && allGrades.length > 0) {
+          const latestGrade = allGrades
+            .map(record => ({
+              ...record,
+              monthPriority: monthPriority[record.exam_month] || 0
+            }))
+            .sort((a, b) => {
+              if (b.exam_year !== a.exam_year) {
+                return b.exam_year - a.exam_year;
+              }
+              return b.monthPriority - a.monthPriority;
+            })[0];
+
+          console.log('최신 성적 데이터 로드:', {
+            exam_year: latestGrade.exam_year,
+            exam_month: latestGrade.exam_month,
+            has_korean_grade: !!latestGrade.korean_grade,
+            has_math_grade: !!latestGrade.math_grade
+          });
+
+          setLatestExamGrades(latestGrade);
+        } else {
+          console.log('성적 데이터가 없습니다.');
+          setLatestExamGrades(null);
+        }
+      } catch (error) {
+        console.error('최신 성적 데이터 조회 오류:', error);
+        setLatestExamGrades(null);
+      }
+    };
+
+    loadLatestExamGrades();
+  }, [studentId]);
+
   // 컴포넌트 마운트 시 추천 결과 가져오기
   React.useEffect(() => {
     if (simpleGradeData || simpleSuneungData) {
