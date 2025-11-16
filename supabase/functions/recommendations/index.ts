@@ -320,13 +320,13 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // 기준 환산점수 계산: S_ref = 국어 표준점수 + 수학 표준점수 + (탐구1 표준점수 + 탐구2 표준점수) / 2
+    // 기준 환산점수 계산: S_ref = 국어 표준점수 + 수학 표준점수 + 탐구1 표준점수 + 탐구2 표준점수
     const koreanStdScore = studentGradesData.korean_std_score || 0;
     const mathStdScore = studentGradesData.math_std_score || 0;
     const inquiry1StdScore = studentGradesData.inquiry1_std_score || 0;
     const inquiry2StdScore = studentGradesData.inquiry2_std_score || 0;
 
-    const sRef = koreanStdScore + mathStdScore + (inquiry1StdScore + inquiry2StdScore) / 2;
+    const sRef = koreanStdScore + mathStdScore + inquiry1StdScore + inquiry2StdScore;
 
     console.log(`계산된 S_ref: ${sRef} (국어: ${koreanStdScore}, 수학: ${mathStdScore}, 탐구1: ${inquiry1StdScore}, 탐구2: ${inquiry2StdScore})`);
 
