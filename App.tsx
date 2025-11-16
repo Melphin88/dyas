@@ -333,9 +333,8 @@ function App() {
         }
         
         // 간단한 수능 성적 데이터 로드
-        if (data.simple_suneung_data) {
-          setSimpleSuneungData(data.simple_suneung_data);
-        }
+        // simple_suneung_data 컬럼은 삭제되었으므로 더 이상 사용하지 않음
+        // 대신 student_grades 테이블의 exam_year, exam_month 기반 다회차 성적 관리 사용
         
         // 상세 성적 데이터 로드
         if (data.detailed_grade_data) {
@@ -374,9 +373,8 @@ function App() {
       if (simpleGradeData !== undefined) {
         dataToSave.simple_grade_data = simpleGradeData;
       }
-      if (simpleSuneungData !== undefined) {
-        dataToSave.simple_suneung_data = simpleSuneungData;
-      }
+      // simple_suneung_data 컬럼은 삭제되었으므로 더 이상 저장하지 않음
+      // 대신 student_grades 테이블의 exam_year, exam_month 기반 다회차 성적 관리 사용
       if (detailedGradeData !== undefined) {
         dataToSave.detailed_grade_data = detailedGradeData;
       }

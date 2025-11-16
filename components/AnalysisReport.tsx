@@ -515,7 +515,50 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         }))
     : [];
 
-  // 실제 추천 결과에서 정시 대학 데이터 추출 (새로운 API 형식)
+  // 지망학과별로 추천 대학 그룹화 (새로운 API 형식)
+  const getRecommendationsByMajor = () => {
+    if (!recommendations || recommendations.length === 0) return {};
+
+    // 지망 학과 목록 가져오기
+    const preferredMajors = simpleGradeData?.personalInfo 
+      ? [
+          simpleGradeData.personalInfo.preferredMajor1,
+          simpleGradeData.personalInfo.preferredMajor2,
+          simpleGradeData.personalInfo.preferredMajor3
+        ].filter(Boolean)
+      : grades?.personalInfo
+      ? [
+          grades.personalInfo.preferredMajor1,
+          grades.personalInfo.preferredMajor2,
+          grades.personalInfo.preferredMajor3
+        ].filter(Boolean)
+      : [];
+
+    const majorGroups: Record<string, any[]> = {};
+
+    // 각 지망 학과별로 추천 대학 그룹화
+    preferredMajors.forEach((major: string) => {
+      const majorRecs = recommendations
+        .filter((rec: any) => rec.department === major)
+        .sort((a: any, b: any) => {
+          // 학생누백과 적정누백 차이가 작을수록 상위
+          const diffA = Math.abs((a.nubaek || 0) - (a.appropriateNubaek || 0));
+          const diffB = Math.abs((b.nubaek || 0) - (b.appropriateNubaek || 0));
+          return diffA - diffB;
+        })
+        .slice(0, 6); // 각 학과별 6개씩
+
+      if (majorRecs.length > 0) {
+        majorGroups[major] = majorRecs;
+      }
+    });
+
+    return majorGroups;
+  };
+
+  const recommendationsByMajor = getRecommendationsByMajor();
+
+  // 실제 추천 결과에서 정시 대학 데이터 추출 (새로운 API 형식) - 레거시 코드 (사용 안 함)
   const jungsiRecommendations = recommendations 
     ? recommendations.filter((rec: any) => rec.admissionType?.includes('정시'))
     : [];
