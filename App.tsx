@@ -448,6 +448,137 @@ function App() {
     }
   };
 
+  // 다회차 수능/모의고사 성적 조회 API
+  const loadExamGrades = async (studentId: string, examYear: number, examMonth: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('student_grades')
+        .select('*')
+        .eq('student_id', studentId)
+        .eq('exam_year', examYear)
+        .eq('exam_month', examMonth)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('회차 성적 데이터 조회 오류:', error);
+        return null;
+      }
+
+      if (data) {
+        console.log('회차 성적 데이터 조회 성공:', data);
+        return {
+          korean_raw_score: data.korean_raw_score,
+          korean_std_score: data.korean_std_score,
+          korean_percentile: data.korean_percentile,
+          korean_grade: data.korean_grade,
+          math_raw_score: data.math_raw_score,
+          math_std_score: data.math_std_score,
+          math_percentile: data.math_percentile,
+          math_grade: data.math_grade,
+          english_raw_score: data.english_raw_score,
+          english_grade: data.english_grade,
+          inquiry1_raw_score: data.inquiry1_raw_score,
+          inquiry1_std_score: data.inquiry1_std_score,
+          inquiry1_percentile: data.inquiry1_percentile,
+          inquiry1_grade: data.inquiry1_grade,
+          inquiry2_raw_score: data.inquiry2_raw_score,
+          inquiry2_std_score: data.inquiry2_std_score,
+          inquiry2_percentile: data.inquiry2_percentile,
+          inquiry2_grade: data.inquiry2_grade,
+          k_history_raw_score: data.k_history_raw_score,
+          k_history_grade: data.k_history_grade
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.error('회차 성적 데이터 조회 오류:', error);
+      return null;
+    }
+  };
+
+  // 다회차 수능/모의고사 성적 저장/UPSERT API
+  const saveExamGrades = async (
+    studentId: string,
+    examYear: number,
+    examMonth: string,
+    grades: {
+      korean_raw_score?: number | null;
+      korean_std_score?: number | null;
+      korean_percentile?: number | null;
+      korean_grade?: number | null;
+      math_raw_score?: number | null;
+      math_std_score?: number | null;
+      math_percentile?: number | null;
+      math_grade?: number | null;
+      english_raw_score?: number | null;
+      english_grade?: number | null;
+      inquiry1_raw_score?: number | null;
+      inquiry1_std_score?: number | null;
+      inquiry1_percentile?: number | null;
+      inquiry1_grade?: number | null;
+      inquiry2_raw_score?: number | null;
+      inquiry2_std_score?: number | null;
+      inquiry2_percentile?: number | null;
+      inquiry2_grade?: number | null;
+      k_history_raw_score?: number | null;
+      k_history_grade?: number | null;
+    }
+  ) => {
+    try {
+      // 기존 데이터 확인
+      const { data: existingData } = await supabase
+        .from('student_grades')
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('exam_year', examYear)
+        .eq('exam_month', examMonth)
+        .single();
+
+      const dataToSave = {
+        student_id: studentId,
+        exam_year: examYear,
+        exam_month: examMonth,
+        ...grades,
+        updated_at: new Date().toISOString()
+      };
+
+      if (existingData) {
+        // 기존 데이터 업데이트
+        const { error } = await supabase
+          .from('student_grades')
+          .update(dataToSave)
+          .eq('student_id', studentId)
+          .eq('exam_year', examYear)
+          .eq('exam_month', examMonth);
+
+        if (error) {
+          console.error('회차 성적 데이터 업데이트 오류:', error);
+          throw error;
+        } else {
+          console.log('회차 성적 데이터 업데이트 성공');
+          return true;
+        }
+      } else {
+        // 새 데이터 삽입
+        const { error } = await supabase
+          .from('student_grades')
+          .insert(dataToSave);
+
+        if (error) {
+          console.error('회차 성적 데이터 삽입 오류:', error);
+          throw error;
+        } else {
+          console.log('회차 성적 데이터 삽입 성공');
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error('회차 성적 데이터 저장 오류:', error);
+      throw error;
+    }
+  };
+
   // 인쇄 보고서 보기
   const handleViewPrintReport = (studentId?: string) => {
     if (studentId) {
@@ -617,6 +748,8 @@ function App() {
 
         {currentView === 'grade' && currentUser && (
           <GradeInput
+            loadExamGrades={loadExamGrades}
+            saveExamGrades={saveExamGrades}
             studentId={currentUser.id || currentUser.username}
             studentName={currentUser.name}
             initialGrades={studentGrades[currentUser.id || currentUser.username]}

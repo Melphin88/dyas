@@ -94,6 +94,8 @@ interface GradeInputProps {
   initialSimpleSuneung?: SimpleSuneungData | null;
   onBack: () => void;
   onComplete?: () => void; // 입력 완료 시 호출될 함수 추가
+  loadExamGrades?: (studentId: string, examYear: number, examMonth: string) => Promise<any>;
+  saveExamGrades?: (studentId: string, examYear: number, examMonth: string, grades: any) => Promise<boolean>;
 }
 
 const GRADE1_SUBJECTS = ['국어', '영어', '수학', '한국사', '사회', '과학'];
@@ -199,7 +201,7 @@ const createEmptyGradeData = (): GradeData => ({
   suneung: createEmptySuneungGrades()
 });
 
-export function GradeInput({ studentId, studentName, initialGrades, onSubmit, onSaveSimpleGrade, onSaveSimpleSuneung, initialSimpleGrades, initialSimpleSuneung, onBack, onComplete }: GradeInputProps) {
+export function GradeInput({ studentId, studentName, initialGrades, onSubmit, onSaveSimpleGrade, onSaveSimpleSuneung, initialSimpleGrades, initialSimpleSuneung, onBack, onComplete, loadExamGrades, saveExamGrades }: GradeInputProps) {
   console.log('GradeInput 렌더링:', { studentId, studentName, initialGrades, initialSimpleGrades, initialSimpleSuneung });
   
   const [grades, setGrades] = useState<GradeData>(initialGrades || createEmptyGradeData());
@@ -291,7 +293,7 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
   // 자동저장 상태 관리
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  
+
   // 초기 로드 여부 추적 (초기 로드 시에는 저장하지 않음)
   const isInitialMount = useRef(true);
   const prevSimpleGradesRef = useRef<SimpleGradeData | null>(null);
@@ -474,7 +476,7 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
       if (onSubmit && grades) {
         onSubmit(grades);
         prevGradesRef.current = grades;
-        setLastSaved(new Date());
+      setLastSaved(new Date());
       }
       setIsSaving(false);
     }, 1500); // 1.5초 디바운스 (상세 성적은 데이터가 크므로 조금 더 긴 디바운스)
@@ -537,7 +539,527 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
     }));
   };
 
-  // 간단한 수능 성적 입력 섹션 렌더링
+  // 다회차 수능/모의고사 성적 입력 상태
+  const [examYear, setExamYear] = useState<number | null>(null);
+  const [examMonth, setExamMonth] = useState<string>('');
+  const [isLoadingGrades, setIsLoadingGrades] = useState(false);
+  const [examGrades, setExamGrades] = useState<{
+    korean_raw_score?: number | null;
+    korean_std_score?: number | null;
+    korean_percentile?: number | null;
+    korean_grade?: number | null;
+    math_raw_score?: number | null;
+    math_std_score?: number | null;
+    math_percentile?: number | null;
+    math_grade?: number | null;
+    english_raw_score?: number | null;
+    english_grade?: number | null;
+    inquiry1_raw_score?: number | null;
+    inquiry1_std_score?: number | null;
+    inquiry1_percentile?: number | null;
+    inquiry1_grade?: number | null;
+    inquiry2_raw_score?: number | null;
+    inquiry2_std_score?: number | null;
+    inquiry2_percentile?: number | null;
+    inquiry2_grade?: number | null;
+    k_history_raw_score?: number | null;
+    k_history_grade?: number | null;
+  }>({});
+  const [isFieldsEnabled, setIsFieldsEnabled] = useState(false);
+  const [isSavingExamGrades, setIsSavingExamGrades] = useState(false);
+
+  // 연도와 월이 모두 선택되었을 때 데이터 로드
+  useEffect(() => {
+    if (examYear && examMonth && loadExamGrades) {
+      setIsLoadingGrades(true);
+      setIsFieldsEnabled(false);
+      
+      loadExamGrades(studentId, examYear, examMonth)
+        .then((data) => {
+          if (data) {
+            setExamGrades(data);
+          } else {
+            // 데이터가 없으면 빈 상태로 초기화
+            setExamGrades({});
+          }
+          setIsFieldsEnabled(true);
+        })
+        .catch((error) => {
+          console.error('성적 데이터 로드 오류:', error);
+          setExamGrades({});
+          setIsFieldsEnabled(true);
+        })
+        .finally(() => {
+          setIsLoadingGrades(false);
+        });
+    } else {
+      setIsFieldsEnabled(false);
+      setExamGrades({});
+    }
+  }, [examYear, examMonth, studentId, loadExamGrades]);
+
+  // 성적 필드 업데이트 및 자동 저장
+  const updateExamGrade = async (field: string, value: number | null) => {
+    if (!isFieldsEnabled) return;
+
+    const newGrades = { ...examGrades, [field]: value };
+    setExamGrades(newGrades);
+
+    // 자동 저장
+    if (examYear && examMonth && saveExamGrades) {
+      setIsSavingExamGrades(true);
+      try {
+        await saveExamGrades(studentId, examYear, examMonth, newGrades);
+      } catch (error) {
+        console.error('성적 저장 오류:', error);
+      } finally {
+        setIsSavingExamGrades(false);
+      }
+    }
+  };
+
+  // 연도 옵션 생성 (현재 연도 기준으로 최근 3년)
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 3 }, (_, i) => currentYear - i);
+
+  // 월 옵션
+  const monthOptions = ['3월', '4월', '6월', '7월', '9월', '10월', '수능'];
+
+  // 다회차 수능/모의고사 성적 입력 섹션 렌더링
+  const renderMultiExamSuneungSection = () => (
+    <Card className="shadow-lg border-navy-200">
+      <CardHeader className="bg-navy-50">
+        <CardTitle className="text-navy-800">수능/모의고사 성적 입력</CardTitle>
+        <p className="text-navy-600">회차를 선택한 후 성적을 입력해주세요.</p>
+      </CardHeader>
+      <CardContent className="pt-6 space-y-6">
+        {/* 회차 선택 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-navy-50 rounded-lg">
+          <div className="space-y-2">
+            <Label className="text-navy-700 font-medium">응시 연도</Label>
+            <Select
+              value={examYear?.toString() || ''}
+              onValueChange={(value) => setExamYear(parseInt(value))}
+            >
+              <SelectTrigger className="bg-white">
+                <SelectValue placeholder="연도 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {yearOptions.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}년
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-navy-700 font-medium">월</Label>
+            <Select
+              value={examMonth}
+              onValueChange={(value) => setExamMonth(value)}
+            >
+              <SelectTrigger className="bg-white">
+                <SelectValue placeholder="월 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {monthOptions.map((month) => (
+                  <SelectItem key={month} value={month}>
+                    {month}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* 로딩 상태 */}
+        {isLoadingGrades && (
+          <div className="flex items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-navy-300 border-t-navy-600"></div>
+            <span className="ml-3 text-navy-600">성적 데이터를 불러오는 중...</span>
+          </div>
+        )}
+
+        {/* 성적 입력 필드 */}
+        {!isLoadingGrades && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* 국어 */}
+              <Card className="border-navy-200">
+                <CardHeader className="bg-navy-50 pb-3">
+                  <CardTitle className="text-lg text-navy-800">국어</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm text-navy-600">원점수</Label>
+                      <Input
+                        type="number"
+                        placeholder="원점수"
+                        value={examGrades.korean_raw_score || ''}
+                        onChange={(e) => updateExamGrade('korean_raw_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        onBlur={(e) => updateExamGrade('korean_raw_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        disabled={!isFieldsEnabled}
+                        className={!isFieldsEnabled ? 'bg-gray-100' : ''}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm text-navy-600">표준점수</Label>
+                      <Input
+                        type="number"
+                        placeholder="표준점수"
+                        value={examGrades.korean_std_score || ''}
+                        onChange={(e) => updateExamGrade('korean_std_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        onBlur={(e) => updateExamGrade('korean_std_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        disabled={!isFieldsEnabled}
+                        className={!isFieldsEnabled ? 'bg-gray-100' : ''}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm text-navy-600">백분위</Label>
+                      <Input
+                        type="number"
+                        placeholder="백분위"
+                        value={examGrades.korean_percentile || ''}
+                        onChange={(e) => updateExamGrade('korean_percentile', e.target.value ? parseFloat(e.target.value) : null)}
+                        onBlur={(e) => updateExamGrade('korean_percentile', e.target.value ? parseFloat(e.target.value) : null)}
+                        disabled={!isFieldsEnabled}
+                        className={!isFieldsEnabled ? 'bg-gray-100' : ''}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm text-navy-600">등급</Label>
+                      <Select
+                        value={examGrades.korean_grade?.toString() || ''}
+                        onValueChange={(value) => updateExamGrade('korean_grade', parseInt(value))}
+                        disabled={!isFieldsEnabled}
+                      >
+                        <SelectTrigger className={!isFieldsEnabled ? 'bg-gray-100' : ''}>
+                          <SelectValue placeholder="등급" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((grade) => (
+                            <SelectItem key={grade} value={grade.toString()}>
+                              {grade}등급
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 수학 */}
+              <Card className="border-navy-200">
+                <CardHeader className="bg-navy-50 pb-3">
+                  <CardTitle className="text-lg text-navy-800">수학</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm text-navy-600">원점수</Label>
+                      <Input
+                        type="number"
+                        placeholder="원점수"
+                        value={examGrades.math_raw_score || ''}
+                        onChange={(e) => updateExamGrade('math_raw_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        onBlur={(e) => updateExamGrade('math_raw_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        disabled={!isFieldsEnabled}
+                        className={!isFieldsEnabled ? 'bg-gray-100' : ''}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm text-navy-600">표준점수</Label>
+                      <Input
+                        type="number"
+                        placeholder="표준점수"
+                        value={examGrades.math_std_score || ''}
+                        onChange={(e) => updateExamGrade('math_std_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        onBlur={(e) => updateExamGrade('math_std_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        disabled={!isFieldsEnabled}
+                        className={!isFieldsEnabled ? 'bg-gray-100' : ''}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm text-navy-600">백분위</Label>
+                      <Input
+                        type="number"
+                        placeholder="백분위"
+                        value={examGrades.math_percentile || ''}
+                        onChange={(e) => updateExamGrade('math_percentile', e.target.value ? parseFloat(e.target.value) : null)}
+                        onBlur={(e) => updateExamGrade('math_percentile', e.target.value ? parseFloat(e.target.value) : null)}
+                        disabled={!isFieldsEnabled}
+                        className={!isFieldsEnabled ? 'bg-gray-100' : ''}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm text-navy-600">등급</Label>
+                      <Select
+                        value={examGrades.math_grade?.toString() || ''}
+                        onValueChange={(value) => updateExamGrade('math_grade', parseInt(value))}
+                        disabled={!isFieldsEnabled}
+                      >
+                        <SelectTrigger className={!isFieldsEnabled ? 'bg-gray-100' : ''}>
+                          <SelectValue placeholder="등급" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((grade) => (
+                            <SelectItem key={grade} value={grade.toString()}>
+                              {grade}등급
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 영어 */}
+              <Card className="border-navy-200">
+                <CardHeader className="bg-navy-50 pb-3">
+                  <CardTitle className="text-lg text-navy-800">영어</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm text-navy-600">원점수</Label>
+                      <Input
+                        type="number"
+                        placeholder="원점수"
+                        value={examGrades.english_raw_score || ''}
+                        onChange={(e) => updateExamGrade('english_raw_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        onBlur={(e) => updateExamGrade('english_raw_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        disabled={!isFieldsEnabled}
+                        className={!isFieldsEnabled ? 'bg-gray-100' : ''}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm text-navy-600">등급</Label>
+                      <Select
+                        value={examGrades.english_grade?.toString() || ''}
+                        onValueChange={(value) => updateExamGrade('english_grade', parseInt(value))}
+                        disabled={!isFieldsEnabled}
+                      >
+                        <SelectTrigger className={!isFieldsEnabled ? 'bg-gray-100' : ''}>
+                          <SelectValue placeholder="등급" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((grade) => (
+                            <SelectItem key={grade} value={grade.toString()}>
+                              {grade}등급
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 한국사 */}
+              <Card className="border-navy-200">
+                <CardHeader className="bg-navy-50 pb-3">
+                  <CardTitle className="text-lg text-navy-800">한국사</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm text-navy-600">원점수</Label>
+                      <Input
+                        type="number"
+                        placeholder="원점수"
+                        value={examGrades.k_history_raw_score || ''}
+                        onChange={(e) => updateExamGrade('k_history_raw_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        onBlur={(e) => updateExamGrade('k_history_raw_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        disabled={!isFieldsEnabled}
+                        className={!isFieldsEnabled ? 'bg-gray-100' : ''}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm text-navy-600">등급</Label>
+                      <Select
+                        value={examGrades.k_history_grade?.toString() || ''}
+                        onValueChange={(value) => updateExamGrade('k_history_grade', parseInt(value))}
+                        disabled={!isFieldsEnabled}
+                      >
+                        <SelectTrigger className={!isFieldsEnabled ? 'bg-gray-100' : ''}>
+                          <SelectValue placeholder="등급" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((grade) => (
+                            <SelectItem key={grade} value={grade.toString()}>
+                              {grade}등급
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 탐구1 */}
+              <Card className="border-navy-200">
+                <CardHeader className="bg-navy-50 pb-3">
+                  <CardTitle className="text-lg text-navy-800">탐구1</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm text-navy-600">원점수</Label>
+                      <Input
+                        type="number"
+                        placeholder="원점수"
+                        value={examGrades.inquiry1_raw_score || ''}
+                        onChange={(e) => updateExamGrade('inquiry1_raw_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        onBlur={(e) => updateExamGrade('inquiry1_raw_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        disabled={!isFieldsEnabled}
+                        className={!isFieldsEnabled ? 'bg-gray-100' : ''}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm text-navy-600">표준점수</Label>
+                      <Input
+                        type="number"
+                        placeholder="표준점수"
+                        value={examGrades.inquiry1_std_score || ''}
+                        onChange={(e) => updateExamGrade('inquiry1_std_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        onBlur={(e) => updateExamGrade('inquiry1_std_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        disabled={!isFieldsEnabled}
+                        className={!isFieldsEnabled ? 'bg-gray-100' : ''}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm text-navy-600">백분위</Label>
+                      <Input
+                        type="number"
+                        placeholder="백분위"
+                        value={examGrades.inquiry1_percentile || ''}
+                        onChange={(e) => updateExamGrade('inquiry1_percentile', e.target.value ? parseFloat(e.target.value) : null)}
+                        onBlur={(e) => updateExamGrade('inquiry1_percentile', e.target.value ? parseFloat(e.target.value) : null)}
+                        disabled={!isFieldsEnabled}
+                        className={!isFieldsEnabled ? 'bg-gray-100' : ''}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm text-navy-600">등급</Label>
+                      <Select
+                        value={examGrades.inquiry1_grade?.toString() || ''}
+                        onValueChange={(value) => updateExamGrade('inquiry1_grade', parseInt(value))}
+                        disabled={!isFieldsEnabled}
+                      >
+                        <SelectTrigger className={!isFieldsEnabled ? 'bg-gray-100' : ''}>
+                          <SelectValue placeholder="등급" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((grade) => (
+                            <SelectItem key={grade} value={grade.toString()}>
+                              {grade}등급
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 탐구2 */}
+              <Card className="border-navy-200">
+                <CardHeader className="bg-navy-50 pb-3">
+                  <CardTitle className="text-lg text-navy-800">탐구2</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm text-navy-600">원점수</Label>
+                      <Input
+                        type="number"
+                        placeholder="원점수"
+                        value={examGrades.inquiry2_raw_score || ''}
+                        onChange={(e) => updateExamGrade('inquiry2_raw_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        onBlur={(e) => updateExamGrade('inquiry2_raw_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        disabled={!isFieldsEnabled}
+                        className={!isFieldsEnabled ? 'bg-gray-100' : ''}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm text-navy-600">표준점수</Label>
+                      <Input
+                        type="number"
+                        placeholder="표준점수"
+                        value={examGrades.inquiry2_std_score || ''}
+                        onChange={(e) => updateExamGrade('inquiry2_std_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        onBlur={(e) => updateExamGrade('inquiry2_std_score', e.target.value ? parseFloat(e.target.value) : null)}
+                        disabled={!isFieldsEnabled}
+                        className={!isFieldsEnabled ? 'bg-gray-100' : ''}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm text-navy-600">백분위</Label>
+                      <Input
+                        type="number"
+                        placeholder="백분위"
+                        value={examGrades.inquiry2_percentile || ''}
+                        onChange={(e) => updateExamGrade('inquiry2_percentile', e.target.value ? parseFloat(e.target.value) : null)}
+                        onBlur={(e) => updateExamGrade('inquiry2_percentile', e.target.value ? parseFloat(e.target.value) : null)}
+                        disabled={!isFieldsEnabled}
+                        className={!isFieldsEnabled ? 'bg-gray-100' : ''}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm text-navy-600">등급</Label>
+                      <Select
+                        value={examGrades.inquiry2_grade?.toString() || ''}
+                        onValueChange={(value) => updateExamGrade('inquiry2_grade', parseInt(value))}
+                        disabled={!isFieldsEnabled}
+                      >
+                        <SelectTrigger className={!isFieldsEnabled ? 'bg-gray-100' : ''}>
+                          <SelectValue placeholder="등급" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((grade) => (
+                            <SelectItem key={grade} value={grade.toString()}>
+                              {grade}등급
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* 저장 상태 표시 */}
+            {isSavingExamGrades && (
+              <div className="flex items-center justify-center p-4 bg-navy-50 rounded-lg">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-navy-300 border-t-navy-600"></div>
+                <span className="ml-2 text-sm text-navy-600">저장 중...</span>
+              </div>
+            )}
+
+            {/* 안내 메시지 */}
+            <div className="mt-6 p-4 bg-navy-50 rounded-lg">
+              <h5 className="font-medium text-navy-800 mb-2">💡 수능/모의고사 성적 입력 가이드</h5>
+              <ul className="text-sm text-navy-600 space-y-1">
+                <li>• 먼저 응시 연도와 월을 선택해주세요</li>
+                <li>• 국어, 수학, 탐구1, 탐구2: 원점수, 표준점수, 백분위, 등급 입력</li>
+                <li>• 영어, 한국사: 원점수, 등급 입력</li>
+                <li>• 입력한 성적은 자동으로 저장됩니다</li>
+                <li>• 여러 회차의 성적을 각각 입력할 수 있습니다</li>
+              </ul>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  // 간단한 수능 성적 입력 섹션 렌더링 (기존 구조 유지 - 다른 곳에서 사용할 수 있으므로 유지)
   const renderSimpleSuneungSection = () => (
     <Card className="shadow-lg border-navy-200">
       <CardHeader className="bg-navy-50">
@@ -1432,7 +1954,7 @@ export function GradeInput({ studentId, studentName, initialGrades, onSubmit, on
 
             {/* 수능 탭 */}
             <TabsContent value="suneung">
-              {renderSimpleSuneungSection()}
+              {renderMultiExamSuneungSection()}
             </TabsContent>
           </Tabs>
 
