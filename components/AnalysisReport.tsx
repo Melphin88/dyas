@@ -10,6 +10,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { ChevronDown, ChevronUp, Target, TrendingUp, AlertCircle, CheckCircle, User, MapPin, School, BookOpen } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import { getUniversityRecommendations } from '../utils/recommendationsApi';
+import { supabase } from '../utils/supabase/client';
 
 interface AnalysisReportProps {
   studentId?: string;
@@ -41,6 +42,9 @@ interface DetailedUniversity extends University {
   appropriateNubaek?: number;
   expectedNubaek?: number;
   minimumNubaek?: number;
+  // 합격률 및 색상 코드 (새로운 API 응답)
+  passRate?: number;
+  colorCode?: 'Green' | 'LightGreen' | 'Yellow' | 'Red';
 }
 
 // 반영비율 분석 함수
@@ -108,6 +112,8 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
   const [expandedAnalysis, setExpandedAnalysis] = useState<{[key: string]: boolean}>({});
   const [recommendations, setRecommendations] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [universityConfigs, setUniversityConfigs] = useState<Record<string, any>>({});
+  const [latestExamGrades, setLatestExamGrades] = useState<any>(null);
   const reportRef = useRef<HTMLDivElement>(null);
 
   const calculateSchoolGPA = (): number => {
@@ -143,6 +149,24 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
   };
 
   const calculateSuneungAverage = (): number => {
+    // 최신 student_grades 테이블 데이터 우선 사용
+    if (latestExamGrades) {
+      const validGrades = [
+        latestExamGrades.korean_grade,
+        latestExamGrades.math_grade,
+        latestExamGrades.english_grade,
+        latestExamGrades.inquiry1_grade,
+        latestExamGrades.inquiry2_grade,
+        latestExamGrades.k_history_grade
+      ].filter((grade): grade is number => grade !== null && grade !== undefined && grade > 0 && grade <= 9);
+
+      if (validGrades.length > 0) {
+        const average = validGrades.reduce((sum, grade) => sum + grade, 0) / validGrades.length;
+        return Number(average.toFixed(2));
+      }
+    }
+
+    // fallback: simpleSuneungData 사용
     if (simpleSuneungData) {
       // 새로운 구조인지 확인 (객체에 grade 속성이 있는지)
       const isNewStructure = simpleSuneungData.korean && typeof simpleSuneungData.korean === 'object' && 'grade' in simpleSuneungData.korean;
@@ -170,17 +194,13 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         ].filter(score => score > 0 && score <= 9);
       }
       
-      console.log('수능 성적 데이터:', simpleSuneungData);
-      console.log('유효한 등급들:', validScores);
-      
       if (validScores.length === 0) return 0;
       
       const average = validScores.reduce((sum, score) => sum + score, 0) / validScores.length;
-      console.log('평균 수능등급:', average);
-      
       return Number(average.toFixed(2));
     }
     
+    // fallback: grades 사용
     if (!grades) return 0;
     
     const subjects = Object.values(grades.suneung);
@@ -205,21 +225,31 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
       const trackType = simpleGradeData?.personalInfo?.trackType || grades?.personalInfo?.trackType || '';
       const examType = trackType.includes('문과') || trackType.includes('인문') ? 'liberal' : 'science';
       
-      // exam_yyyymm 결정 (현재 날짜 기준으로 2025년 9월 또는 최신 시험 연월)
-      // 실제로는 학생의 최신 성적 데이터에서 exam_year와 exam_month를 조합하여 결정해야 하지만,
-      // 여기서는 기본값으로 202509 (2025년 9월) 사용
-      const currentDate = new Date();
-      const currentYear = currentDate.getFullYear();
-      const currentMonth = currentDate.getMonth() + 1;
+      // exam_yyyymm 결정 (학생의 최신 성적 데이터에서 exam_year와 exam_month를 조합)
+      let examYyyymm = 202509; // 기본값
       
-      // 9월 이후면 현재 연도 9월, 그 전이면 전년도 9월
-      let examYyyymm = currentMonth >= 9 
-        ? parseInt(`${currentYear}09`) 
-        : parseInt(`${currentYear - 1}09`);
-      
-      // 기본값: 202509
-      if (!examYyyymm || examYyyymm < 202000) {
-        examYyyymm = 202509;
+      if (latestExamGrades) {
+        const year = latestExamGrades.exam_year;
+        const monthMap: Record<string, string> = {
+          '3월': '03',
+          '4월': '04',
+          '6월': '06',
+          '7월': '07',
+          '9월': '09',
+          '10월': '10',
+          '수능': '11'
+        };
+        const monthStr = monthMap[latestExamGrades.exam_month] || '09';
+        examYyyymm = parseInt(`${year}${monthStr}`);
+      } else {
+        // fallback: 현재 날짜 기준
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth() + 1;
+        
+        examYyyymm = currentMonth >= 9 
+          ? parseInt(`${currentYear}09`) 
+          : parseInt(`${currentYear - 1}09`);
       }
 
       console.log('대학 추천 API 호출:', {
@@ -245,25 +275,65 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         console.log('메타데이터:', result.data.metadata);
         console.log('=== 추천 결과 상세 정보 끝 ===');
 
+        // university_config에서 반영비율 정보 가져오기
+        const configMap: Record<string, any> = {};
+        const examYear = result.data.metadata.cutline_year_used || 
+          (currentMonth >= 9 ? currentYear + 1 : currentYear);
+        
+        if (result.data.preferred_majors && result.data.preferred_majors.length > 0) {
+          // 추천된 대학 목록 추출
+          const recommendedUniversities = result.data.recommendations.map((r: any) => r.university_name);
+          const recommendedDepartments = result.data.recommendations.map((r: any) => r.department_name);
+          
+          const { data: configData } = await supabase
+            .from('university_config')
+            .select('*')
+            .in('university_name', recommendedUniversities)
+            .in('department_name', recommendedDepartments)
+            .eq('admission_type', '정시')
+            .eq('exam_type', examType === 'science' ? '이과' : '문과')
+            .eq('exam_year', examYear);
+
+          if (configData) {
+            configData.forEach((config: any) => {
+              const key = `${config.university_name}_${config.department_name}`;
+              configMap[key] = config;
+            });
+          }
+        }
+
+        setUniversityConfigs(configMap);
+
         // 새로운 API 응답 형식을 기존 형식으로 변환
-        const convertedRecommendations = result.data.recommendations.map((rec: any) => ({
-          university: rec.university_name,
-          department: rec.department_name,
-          admissionType: '정시(가)', // cutline_nubaek은 정시 데이터
-          probability: Math.max(0, Math.min(100, 100 - rec.nubaek_difference * 2)), // 누백 차이에 따라 합격률 계산
-          matchScore: rec.match_score,
-          requirements: {
-            minSuneungGrade: 0, // cutline_nubaek에는 등급 정보가 없음
-            requiredSubjects: ['국어', '수학', '영어', '탐구']
-          },
-          admissionStrategy: `누백 ${rec.student_nubaek.toFixed(2)}% 기준 추천`,
-          competitionAnalysis: `적정 누백: ${rec.appropriate_nubaek.toFixed(2)}%, 예상 누백: ${rec.expected_nubaek.toFixed(2)}%, 최소 누백: ${rec.minimum_nubaek.toFixed(2)}%`,
-          recommendation: rec.nubaek_difference <= 2 ? 'optimal' : rec.nubaek_difference <= 5 ? 'safe' : 'challenge',
-          nubaek: rec.student_nubaek,
-          appropriateNubaek: rec.appropriate_nubaek,
-          expectedNubaek: rec.expected_nubaek,
-          minimumNubaek: rec.minimum_nubaek
-        }));
+        const convertedRecommendations = result.data.recommendations.map((rec: any) => {
+          const configKey = `${rec.university_name}_${rec.department_name}`;
+          const config = configMap[configKey];
+          
+          return {
+            university: rec.university_name,
+            department: rec.department_name,
+            admissionType: '정시(가)', // cutline_nubaek은 정시 데이터
+            probability: rec.pass_rate || Math.max(0, Math.min(100, 100 - rec.nubaek_difference * 2)), // API에서 계산된 합격률 사용
+            matchScore: rec.match_score,
+            requirements: {
+              minSuneungGrade: 0, // cutline_nubaek에는 등급 정보가 없음
+              requiredSubjects: ['국어', '수학', '영어', '탐구']
+            },
+            admissionStrategy: `누백 ${rec.student_nubaek.toFixed(2)}% 기준 추천`,
+            competitionAnalysis: `적정 누백: ${rec.appropriate_nubaek.toFixed(2)}%, 예상 누백: ${rec.expected_nubaek.toFixed(2)}%, 최소 누백: ${rec.minimum_nubaek.toFixed(2)}%`,
+            recommendation: rec.color_code === 'Green' ? 'safe' : rec.color_code === 'LightGreen' ? 'optimal' : rec.color_code === 'Yellow' ? 'challenge' : 'challenge',
+            nubaek: rec.student_nubaek,
+            appropriateNubaek: rec.appropriate_nubaek,
+            expectedNubaek: rec.expected_nubaek,
+            minimumNubaek: rec.minimum_nubaek,
+            passRate: rec.pass_rate, // 합격률 추가
+            colorCode: rec.color_code, // 색상 코드 추가
+            examYear: rec.exam_year, // 데이터 연도 추가
+            koreanWeight: config?.korean_weight || 0,
+            mathWeight: config?.math_weight || 0,
+            inquiryWeight: config?.inquiry_weight || 0
+          };
+        });
 
         setRecommendations(convertedRecommendations);
       } else {
@@ -468,7 +538,9 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         nubaek: rec.nubaek,
         appropriateNubaek: rec.appropriateNubaek,
         expectedNubaek: rec.expectedNubaek,
-        minimumNubaek: rec.minimumNubaek
+        minimumNubaek: rec.minimumNubaek,
+        passRate: rec.passRate,
+        colorCode: rec.colorCode
       } as DetailedUniversity)),
     na: jungsiRecommendations
       .slice(6, 12) // 7-12번째를 나군으로 표시
@@ -498,7 +570,9 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         nubaek: rec.nubaek,
         appropriateNubaek: rec.appropriateNubaek,
         expectedNubaek: rec.expectedNubaek,
-        minimumNubaek: rec.minimumNubaek
+        minimumNubaek: rec.minimumNubaek,
+        passRate: rec.passRate,
+        colorCode: rec.colorCode
       } as DetailedUniversity)),
     da: jungsiRecommendations
       .slice(12, 18) // 13-18번째를 다군으로 표시
@@ -528,7 +602,9 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         nubaek: rec.nubaek,
         appropriateNubaek: rec.appropriateNubaek,
         expectedNubaek: rec.expectedNubaek,
-        minimumNubaek: rec.minimumNubaek
+        minimumNubaek: rec.minimumNubaek,
+        passRate: rec.passRate,
+        colorCode: rec.colorCode
       } as DetailedUniversity))
   };
 
@@ -785,82 +861,105 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
           </TabsContent>
 
           <TabsContent value="jungsi">
-            <Tabs value={activeJungsiTab} onValueChange={setActiveJungsiTab}>
-              <TabsList className="grid w-full grid-cols-3 mb-6">
-                <TabsTrigger value="ga">가군</TabsTrigger>
-                <TabsTrigger value="na">나군</TabsTrigger>
-                <TabsTrigger value="da">다군</TabsTrigger>
-              </TabsList>
+            <Card className="shadow-lg border-navy-200">
+              <CardHeader className="bg-navy-50">
+                <CardTitle className="text-navy-800">정시 추천 대학</CardTitle>
+                <p className="text-navy-600 text-sm mt-2">
+                  지망 학과별 추천 대학 (각 6개씩)
+                </p>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {loading ? (
+                  <div className="text-center py-8">
+                    <div className="text-navy-600">추천 결과를 계산 중입니다...</div>
+                  </div>
+                ) : Object.keys(recommendationsByMajor).length > 0 ? (
+                  <div className="space-y-8">
+                    {Object.entries(recommendationsByMajor).map(([major, recs]) => (
+                      <div key={major} className="space-y-4">
+                        <h3 className="text-lg font-semibold text-navy-800 border-b-2 border-navy-200 pb-2">
+                          {major}
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {recs.map((rec: any, index: number) => {
+                            // 색상 코드에 따른 배경색 결정
+                            const getColorClass = (colorCode?: string) => {
+                              switch (colorCode) {
+                                case 'Green':
+                                  return 'bg-green-50 border-green-300';
+                                case 'LightGreen':
+                                  return 'bg-green-100 border-green-400';
+                                case 'Yellow':
+                                  return 'bg-yellow-50 border-yellow-300';
+                                case 'Red':
+                                  return 'bg-red-50 border-red-300';
+                                default:
+                                  return 'bg-gray-50 border-gray-300';
+                              }
+                            };
 
-              <TabsContent value="ga">
-                <Card className="shadow-lg border-navy-200">
-                  <CardHeader className="bg-navy-50">
-                    <CardTitle className="text-navy-800">정시 가군 추천 대학</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    {loading ? (
-                      <div className="text-center py-8">
-                        <div className="text-navy-600">추천 결과를 계산 중입니다...</div>
-                      </div>
-                    ) : jungsiUniversities.ga.length > 0 ? (
-                      <div className="space-y-4">
-                        {jungsiUniversities.ga.map((university, index) => renderEnhancedUniversityCard(university, index))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <div className="text-navy-600">추천할 가군 대학이 없습니다.</div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                            const colorClass = getColorClass(rec.colorCode);
+                            const reflectionRatio = rec.koreanWeight && rec.mathWeight && rec.inquiryWeight
+                              ? `국어 ${(rec.koreanWeight * 100).toFixed(0)}%, 수학 ${(rec.mathWeight * 100).toFixed(0)}%, 탐구 ${(rec.inquiryWeight * 100).toFixed(0)}%`
+                              : '반영비율 정보 없음';
 
-              <TabsContent value="na">
-                <Card className="shadow-lg border-navy-200">
-                  <CardHeader className="bg-navy-50">
-                    <CardTitle className="text-navy-800">정시 나군 추천 대학</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    {loading ? (
-                      <div className="text-center py-8">
-                        <div className="text-navy-600">추천 결과를 계산 중입니다...</div>
+                            return (
+                              <Card
+                                key={`${major}-${index}`}
+                                className={`shadow-md border-2 ${colorClass} hover:shadow-lg transition-shadow`}
+                              >
+                                <CardContent className="p-4">
+                                  <div className="space-y-2">
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <h4 className="font-bold text-navy-900 text-lg">{rec.university}</h4>
+                                        <p className="text-sm text-navy-700 mt-1">{rec.department}</p>
+                                      </div>
+                                      <Badge
+                                        className={`ml-2 ${
+                                          rec.colorCode === 'Green'
+                                            ? 'bg-green-600'
+                                            : rec.colorCode === 'LightGreen'
+                                            ? 'bg-green-400'
+                                            : rec.colorCode === 'Yellow'
+                                            ? 'bg-yellow-400'
+                                            : 'bg-red-500'
+                                        } text-white`}
+                                      >
+                                        {rec.passRate?.toFixed(1) || 0}%
+                                      </Badge>
+                                    </div>
+                                    
+                                    <div className="mt-3 space-y-1 text-sm">
+                                      <div className="flex justify-between">
+                                        <span className="text-navy-600">반영비율:</span>
+                                        <span className="text-navy-800 font-medium">{reflectionRatio}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-navy-600">데이터 연도:</span>
+                                        <span className="text-navy-800 font-medium">{rec.examYear || 'N/A'}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-navy-600">합격율:</span>
+                                        <span className="text-navy-800 font-bold">{rec.passRate?.toFixed(1) || 0}%</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
                       </div>
-                    ) : jungsiUniversities.na.length > 0 ? (
-                      <div className="space-y-4">
-                        {jungsiUniversities.na.map((university, index) => renderEnhancedUniversityCard(university, index))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <div className="text-navy-600">추천할 나군 대학이 없습니다.</div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="da">
-                <Card className="shadow-lg border-navy-200">
-                  <CardHeader className="bg-navy-50">
-                    <CardTitle className="text-navy-800">정시 다군 추천 대학</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    {loading ? (
-                      <div className="text-center py-8">
-                        <div className="text-navy-600">추천 결과를 계산 중입니다...</div>
-                      </div>
-                    ) : jungsiUniversities.da.length > 0 ? (
-                      <div className="space-y-4">
-                        {jungsiUniversities.da.map((university, index) => renderEnhancedUniversityCard(university, index))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <div className="text-navy-600">추천할 다군 대학이 없습니다.</div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-navy-600">추천할 정시 대학이 없습니다.</div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

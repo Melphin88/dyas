@@ -95,6 +95,79 @@ async function getLatestExamYyyymm(supabase: any, tableName: string): Promise<nu
   return data.exam_yyyymm;
 }
 
+// 정규분포 누적 분포 함수 (CDF)
+// Φ(x) = P(X ≤ x) where X ~ N(0, 1)
+function normalCDF(x: number): number {
+  // 표준 정규분포 CDF 계산
+  // Abramowitz and Stegun approximation
+  const a1 =  0.254829592;
+  const a2 = -0.284496736;
+  const a3 =  1.421413741;
+  const a4 = -1.453152027;
+  const a5 =  1.061405429;
+  const p  =  0.3275911;
+
+  const sign = x < 0 ? -1 : 1;
+  x = Math.abs(x) / Math.sqrt(2.0);
+
+  const t = 1.0 / (1.0 + p * x);
+  const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+
+  return 0.5 * (1.0 + sign * y);
+}
+
+// 컷라인 분포 표준편차 추정
+function estimateCutlineStdDev(appropriateNubaek: number, expectedNubaek: number): number {
+  // σ_cut = |appropriate_nubaek - expected_nubaek| / 0.84
+  // Z_0.80 ≈ 0.84 (80% percentile of standard normal distribution)
+  const z80 = 0.84;
+  return Math.abs(appropriateNubaek - expectedNubaek) / z80;
+}
+
+// 합격률 계산
+function calculatePassRate(
+  studentNubaek: number,
+  expectedNubaek: number,
+  appropriateNubaek: number
+): number {
+  // 표준편차 추정
+  const sigmaCut = estimateCutlineStdDev(appropriateNubaek, expectedNubaek);
+  
+  // 표준편차가 0이거나 너무 작으면 기본값 반환
+  if (sigmaCut <= 0 || !isFinite(sigmaCut)) {
+    // 적정 누백과 학생 누백 차이로 간단히 계산
+    const diff = studentNubaek - expectedNubaek;
+    if (diff <= -5) return 90;
+    if (diff <= -2) return 70;
+    if (diff <= 0) return 50;
+    if (diff <= 2) return 30;
+    if (diff <= 5) return 15;
+    return 5;
+  }
+
+  // μ_cut = expected_nubaek (50% 컷라인)
+  const muCut = expectedNubaek;
+
+  // Z-score 계산: (N - μ_cut) / σ_cut
+  const zScore = (studentNubaek - muCut) / sigmaCut;
+
+  // P = 1 - Φ((N - μ_cut) / σ_cut)
+  // Φ는 표준 정규분포 CDF
+  const phiValue = normalCDF(zScore);
+  const passRate = (1 - phiValue) * 100;
+
+  // 0~100 범위로 제한
+  return Math.max(0, Math.min(100, passRate));
+}
+
+// 색상 코드 결정
+function determineColorCode(passRate: number): 'Green' | 'LightGreen' | 'Yellow' | 'Red' {
+  if (passRate >= 80) return 'Green';
+  if (passRate >= 50) return 'LightGreen';
+  if (passRate >= 20) return 'Yellow';
+  return 'Red';
+}
+
 Deno.serve(async (req: Request) => {
   // CORS preflight 처리
   if (req.method === 'OPTIONS') {
@@ -395,6 +468,16 @@ Deno.serve(async (req: Request) => {
       const count = majorCounts[major] || 0;
 
       if (count < 6) {
+        // 합격률 계산
+        const passRate = calculatePassRate(
+          nubaek,
+          cutline.expected_nubaek,
+          cutline.appropriate_nubaek
+        );
+
+        // 색상 코드 결정
+        const colorCode = determineColorCode(passRate);
+
         recommendations.push({
           university_name: cutline.university_name,
           department_name: cutline.department_name,
@@ -405,7 +488,9 @@ Deno.serve(async (req: Request) => {
           exam_year: cutline.exam_year,
           student_nubaek: nubaek,
           nubaek_difference: cutline.nubaekDifference,
-          match_score: Math.max(0, 100 - cutline.nubaekDifference * 10) // 차이가 작을수록 높은 점수
+          match_score: Math.max(0, 100 - cutline.nubaekDifference * 10), // 차이가 작을수록 높은 점수
+          pass_rate: Math.round(passRate * 100) / 100, // 소수점 둘째 자리까지
+          color_code: colorCode
         });
 
         majorCounts[major] = count + 1;

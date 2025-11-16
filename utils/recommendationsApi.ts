@@ -26,6 +26,8 @@ export interface RecommendationResult {
       student_nubaek: number;
       nubaek_difference: number;
       match_score: number;
+      pass_rate: number;
+      color_code: 'Green' | 'LightGreen' | 'Yellow' | 'Red';
     }>;
     metadata: {
       lookup_yyyymm_used: number;
