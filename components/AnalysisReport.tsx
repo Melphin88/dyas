@@ -9,6 +9,7 @@ import { GradeData } from './GradeInput';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { ChevronDown, ChevronUp, Target, TrendingUp, AlertCircle, CheckCircle, User, MapPin, School, BookOpen } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
+import { getUniversityRecommendations } from '../utils/recommendationsApi';
 
 interface AnalysisReportProps {
   studentId?: string;
@@ -35,6 +36,11 @@ interface DetailedUniversity extends University {
     threeYearAvg: { score: number; students: number };
     yearlyData: Array<{ year: number; score: number; students: number }>;
   };
+  // 누백 관련 필드 (새로운 API 응답)
+  nubaek?: number;
+  appropriateNubaek?: number;
+  expectedNubaek?: number;
+  minimumNubaek?: number;
 }
 
 // 반영비율 분석 함수
@@ -186,113 +192,82 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
     return Number((totalGrade / validGrades.length).toFixed(2));
   };
 
-  // 추천 결과 가져오기
+  // 추천 결과 가져오기 (새로운 API 사용)
   const fetchRecommendations = async () => {
+    if (!studentId) {
+      console.error('학생 ID가 없습니다.');
+      return;
+    }
+
     setLoading(true);
     try {
-      // 학생 데이터 구성
-      const studentData = {
-        name: studentName || "학생",
-        schoolType: grades?.personalInfo?.schoolType === '특목고' ? '특목고' : 
-                   grades?.personalInfo?.schoolType === '자사고' ? '자사고' :
-                   grades?.personalInfo?.schoolType === '국제고' ? '국제고' : '일반고',
-        schoolGrades: grades?.school || {
-          grade1: { semester1: {}, semester2: {} },
-          grade2: { semester1: {}, semester2: {} },
-          grade3: { semester1: {}, semester2: {} }
-        },
-        suneungGrades: {
-          korean: { 
-            grade: simpleSuneungData?.korean?.grade || simpleSuneungData?.korean || 0, 
-            standardScore: simpleSuneungData?.korean?.standardScore || 0, 
-            percentile: 0 
-          },
-          math: { 
-            grade: simpleSuneungData?.math?.grade || simpleSuneungData?.math || 0, 
-            standardScore: simpleSuneungData?.math?.standardScore || 0, 
-            percentile: 0 
-          },
-          english: { 
-            grade: simpleSuneungData?.english?.grade || simpleSuneungData?.english || 0, 
-            standardScore: 0, 
-            percentile: 0 
-          },
-          koreanHistory: { 
-            grade: simpleSuneungData?.koreanHistory?.grade || 0, 
-            standardScore: 0, 
-            percentile: 0 
-          },
-          inquiry1: { 
-            grade: simpleSuneungData?.inquiry1?.grade || simpleSuneungData?.inquiry1 || 0, 
-            standardScore: simpleSuneungData?.inquiry1?.standardScore || 0, 
-            percentile: 0 
-          },
-          inquiry2: { 
-            grade: simpleSuneungData?.inquiry2?.grade || simpleSuneungData?.inquiry2 || 0, 
-            standardScore: simpleSuneungData?.inquiry2?.standardScore || 0, 
-            percentile: 0 
-          }
-        },
-        preferredUniversities: [],
-        preferredMajors: [
-          simpleGradeData?.personalInfo?.preferredMajor1 || grades?.personalInfo?.preferredMajor1,
-          simpleGradeData?.personalInfo?.preferredMajor2 || grades?.personalInfo?.preferredMajor2, 
-          simpleGradeData?.personalInfo?.preferredMajor3 || grades?.personalInfo?.preferredMajor3
-        ].filter(Boolean) || [], // 드롭박스에서 선택한 학과들
-        preferredRegions: []
-      };
-
-      console.log('전송할 학생 데이터:', JSON.stringify(studentData, null, 2));
-      console.log('지망학과 정보:', {
-        fromSimpleGradeData: {
-          preferredMajor1: simpleGradeData?.personalInfo?.preferredMajor1,
-          preferredMajor2: simpleGradeData?.personalInfo?.preferredMajor2,
-          preferredMajor3: simpleGradeData?.personalInfo?.preferredMajor3,
-          customMajor: simpleGradeData?.personalInfo?.customMajor
-        },
-        fromGrades: {
-          preferredMajor1: grades?.personalInfo?.preferredMajor1,
-          preferredMajor2: grades?.personalInfo?.preferredMajor2,
-          preferredMajor3: grades?.personalInfo?.preferredMajor3,
-          customMajor: grades?.personalInfo?.customMajor
-        },
-        finalPreferredMajors: [
-          simpleGradeData?.personalInfo?.preferredMajor1 || grades?.personalInfo?.preferredMajor1,
-          simpleGradeData?.personalInfo?.preferredMajor2 || grades?.personalInfo?.preferredMajor2, 
-          simpleGradeData?.personalInfo?.preferredMajor3 || grades?.personalInfo?.preferredMajor3
-        ].filter(Boolean)
-      });
+      // trackType에서 exam_type 결정 (문과 -> 'liberal', 이과 -> 'science')
+      const trackType = simpleGradeData?.personalInfo?.trackType || grades?.personalInfo?.trackType || '';
+      const examType = trackType.includes('문과') || trackType.includes('인문') ? 'liberal' : 'science';
       
-      const response = await fetch(`https://kgbcqvvkahugbrqlomjc.supabase.co/functions/v1/server/calculate-recommendations`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnYmNxdnZrYWh1Z2JycWxvbWpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2ODM5MjgsImV4cCI6MjA3MTI1OTkyOH0.o23VzWrv9Kv6jWb7eIw4a3rWkkWfA5TQyU2Z1RRhvQI`
-        },
-        body: JSON.stringify({
-          studentData,
-          debugMode: true
-        })
+      // exam_yyyymm 결정 (현재 날짜 기준으로 2025년 9월 또는 최신 시험 연월)
+      // 실제로는 학생의 최신 성적 데이터에서 exam_year와 exam_month를 조합하여 결정해야 하지만,
+      // 여기서는 기본값으로 202509 (2025년 9월) 사용
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = currentDate.getMonth() + 1;
+      
+      // 9월 이후면 현재 연도 9월, 그 전이면 전년도 9월
+      let examYyyymm = currentMonth >= 9 
+        ? parseInt(`${currentYear}09`) 
+        : parseInt(`${currentYear - 1}09`);
+      
+      // 기본값: 202509
+      if (!examYyyymm || examYyyymm < 202000) {
+        examYyyymm = 202509;
+      }
+
+      console.log('대학 추천 API 호출:', {
+        studentId,
+        examYyyymm,
+        examType,
+        trackType
       });
 
-      if (response.ok) {
-        const result = await response.json();
+      // 새로운 대학 추천 API 호출
+      const result = await getUniversityRecommendations(
+        studentId,
+        examYyyymm,
+        examType
+      );
+
+      if (result.success && result.data) {
         console.log('=== 추천 결과 상세 정보 ===');
-        console.log('전체 추천 개수:', result.recommendations?.length || 0);
-        
-        const susiRecs = result.recommendations?.filter(r => r.admissionType?.includes('교과') || r.admissionType?.includes('종합')) || [];
-        const jeongsiRecs = result.recommendations?.filter(r => r.admissionType?.includes('정시')) || [];
-        
-        console.log('수시 추천:', susiRecs.length);
-        console.log('정시 추천:', jeongsiRecs.length);
-        console.log('첫 번째 추천:', result.recommendations?.[0]);
-        console.log('수시 대학 목록:', susiRecs.map(r => `${r.university} ${r.department} (${r.probability})`));
-        console.log('정시 대학 목록:', jeongsiRecs.map(r => `${r.university} ${r.department} (${r.probability})`));
-        console.log('디버그 정보:', result.debugInfo);
+        console.log('학생 누백:', result.data.nubaek);
+        console.log('S_ref:', result.data.s_ref);
+        console.log('지망 학과:', result.data.preferred_majors);
+        console.log('추천 대학 수:', result.data.recommendations.length);
+        console.log('메타데이터:', result.data.metadata);
         console.log('=== 추천 결과 상세 정보 끝 ===');
-        setRecommendations(result.recommendations || []);
+
+        // 새로운 API 응답 형식을 기존 형식으로 변환
+        const convertedRecommendations = result.data.recommendations.map((rec: any) => ({
+          university: rec.university_name,
+          department: rec.department_name,
+          admissionType: '정시(가)', // cutline_nubaek은 정시 데이터
+          probability: Math.max(0, Math.min(100, 100 - rec.nubaek_difference * 2)), // 누백 차이에 따라 합격률 계산
+          matchScore: rec.match_score,
+          requirements: {
+            minSuneungGrade: 0, // cutline_nubaek에는 등급 정보가 없음
+            requiredSubjects: ['국어', '수학', '영어', '탐구']
+          },
+          admissionStrategy: `누백 ${rec.student_nubaek.toFixed(2)}% 기준 추천`,
+          competitionAnalysis: `적정 누백: ${rec.appropriate_nubaek.toFixed(2)}%, 예상 누백: ${rec.expected_nubaek.toFixed(2)}%, 최소 누백: ${rec.minimum_nubaek.toFixed(2)}%`,
+          recommendation: rec.nubaek_difference <= 2 ? 'optimal' : rec.nubaek_difference <= 5 ? 'safe' : 'challenge',
+          nubaek: rec.student_nubaek,
+          appropriateNubaek: rec.appropriate_nubaek,
+          expectedNubaek: rec.expected_nubaek,
+          minimumNubaek: rec.minimum_nubaek
+        }));
+
+        setRecommendations(convertedRecommendations);
       } else {
-        console.error('추천 결과 가져오기 실패');
+        console.error('추천 결과 가져오기 실패:', result.error);
         setRecommendations([]);
       }
     } catch (error) {
@@ -459,92 +434,101 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         }))
     : [];
 
-  // 실제 추천 결과에서 정시 대학 데이터 추출
+  // 실제 추천 결과에서 정시 대학 데이터 추출 (새로운 API 형식)
   const jungsiRecommendations = recommendations 
-    ? recommendations.filter((rec: any) => rec.admissionType === '정시' || rec.admissionType?.includes('정시'))
+    ? recommendations.filter((rec: any) => rec.admissionType?.includes('정시'))
     : [];
 
   const jungsiUniversities = {
     ga: jungsiRecommendations
-      .filter((rec: any) => rec.admissionType?.includes('정시(가)'))
-      .slice(0, 6)
+      .slice(0, 6) // 상위 6개만 가군으로 표시
       .map((rec: any) => ({
         name: rec.university,
         department: rec.department,
         admissionType: '정시 가군',
-        competitionRate: rec.cutOffData?.competitionRate || 0,
-        requiredGrade: rec.cutOffData?.grade50 || 0,
-        matchPercentage: Math.round(rec.probabilityScore),
+        competitionRate: 0, // cutline_nubaek에는 경쟁률 정보 없음
+        requiredGrade: 0,
+        matchPercentage: Math.round(rec.probability || 0),
         location: '지역 정보 없음',
-        description: `${rec.university} ${rec.department} - ${rec.probability} 추천`,
-        requirements: {
-          minSuneungGrade: rec.cutOffData?.grade50,
-          requiredSubjects: [],
-          additionalFactors: rec.reasons || []
+        description: `${rec.university} ${rec.department} - 누백 ${rec.nubaek?.toFixed(2) || 0}%`,
+        requirements: rec.requirements || {
+          minSuneungGrade: 0,
+          requiredSubjects: ['국어', '수학', '영어', '탐구'],
+          additionalFactors: []
         },
-        admissionStrategy: rec.reasons?.join(', ') || '추천 이유 없음',
-        competitionAnalysis: `경쟁률 ${rec.cutOffData?.competitionRate || 0}:1`,
-        recommendation: rec.probability === '안정' ? 'safe' : rec.probability === '적정' ? 'optimal' : 'challenge',
+        admissionStrategy: rec.admissionStrategy || '누백 기준 추천',
+        competitionAnalysis: rec.competitionAnalysis || `적정 누백: ${rec.appropriateNubaek?.toFixed(2) || 0}%`,
+        recommendation: rec.recommendation || 'safe',
         reflectionRatio: '반영비율 정보 없음',
         admissionData: {
-          lastYear: { score: rec.cutOffData?.grade50 || 0, students: 0 },
-          threeYearAvg: { score: rec.cutOffData?.grade50 || 0, students: 0 },
+          lastYear: { score: 0, students: 0 },
+          threeYearAvg: { score: 0, students: 0 },
           yearlyData: []
-        }
+        },
+        nubaek: rec.nubaek,
+        appropriateNubaek: rec.appropriateNubaek,
+        expectedNubaek: rec.expectedNubaek,
+        minimumNubaek: rec.minimumNubaek
       } as DetailedUniversity)),
     na: jungsiRecommendations
-      .filter((rec: any) => rec.admissionType?.includes('정시(나)'))
-      .slice(0, 6)
+      .slice(6, 12) // 7-12번째를 나군으로 표시
       .map((rec: any) => ({
         name: rec.university,
         department: rec.department,
         admissionType: '정시 나군',
-        competitionRate: rec.cutOffData?.competitionRate || 0,
-        requiredGrade: rec.cutOffData?.grade50 || 0,
-        matchPercentage: Math.round(rec.probabilityScore),
+        competitionRate: 0,
+        requiredGrade: 0,
+        matchPercentage: Math.round(rec.probability || 0),
         location: '지역 정보 없음',
-        description: `${rec.university} ${rec.department} - ${rec.probability} 추천`,
-        requirements: {
-          minSuneungGrade: rec.cutOffData?.grade50,
-          requiredSubjects: [],
-          additionalFactors: rec.reasons || []
+        description: `${rec.university} ${rec.department} - 누백 ${rec.nubaek?.toFixed(2) || 0}%`,
+        requirements: rec.requirements || {
+          minSuneungGrade: 0,
+          requiredSubjects: ['국어', '수학', '영어', '탐구'],
+          additionalFactors: []
         },
-        admissionStrategy: rec.reasons?.join(', ') || '추천 이유 없음',
-        competitionAnalysis: `경쟁률 ${rec.cutOffData?.competitionRate || 0}:1`,
-        recommendation: rec.probability === '안정' ? 'safe' : rec.probability === '적정' ? 'optimal' : 'challenge',
+        admissionStrategy: rec.admissionStrategy || '누백 기준 추천',
+        competitionAnalysis: rec.competitionAnalysis || `적정 누백: ${rec.appropriateNubaek?.toFixed(2) || 0}%`,
+        recommendation: rec.recommendation || 'safe',
         reflectionRatio: '반영비율 정보 없음',
         admissionData: {
-          lastYear: { score: rec.cutOffData?.grade50 || 0, students: 0 },
-          threeYearAvg: { score: rec.cutOffData?.grade50 || 0, students: 0 },
+          lastYear: { score: 0, students: 0 },
+          threeYearAvg: { score: 0, students: 0 },
           yearlyData: []
-        }
+        },
+        nubaek: rec.nubaek,
+        appropriateNubaek: rec.appropriateNubaek,
+        expectedNubaek: rec.expectedNubaek,
+        minimumNubaek: rec.minimumNubaek
       } as DetailedUniversity)),
     da: jungsiRecommendations
-      .filter((rec: any) => rec.admissionType?.includes('정시(다)'))
-      .slice(0, 6)
+      .slice(12, 18) // 13-18번째를 다군으로 표시
       .map((rec: any) => ({
         name: rec.university,
         department: rec.department,
         admissionType: '정시 다군',
-        competitionRate: rec.cutOffData?.competitionRate || 0,
-        requiredGrade: rec.cutOffData?.grade50 || 0,
-        matchPercentage: Math.round(rec.probabilityScore),
+        competitionRate: 0,
+        requiredGrade: 0,
+        matchPercentage: Math.round(rec.probability || 0),
         location: '지역 정보 없음',
-        description: `${rec.university} ${rec.department} - ${rec.probability} 추천`,
-        requirements: {
-          minSuneungGrade: rec.cutOffData?.grade50,
-          requiredSubjects: [],
-          additionalFactors: rec.reasons || []
+        description: `${rec.university} ${rec.department} - 누백 ${rec.nubaek?.toFixed(2) || 0}%`,
+        requirements: rec.requirements || {
+          minSuneungGrade: 0,
+          requiredSubjects: ['국어', '수학', '영어', '탐구'],
+          additionalFactors: []
         },
-        admissionStrategy: rec.reasons?.join(', ') || '추천 이유 없음',
-        competitionAnalysis: `경쟁률 ${rec.cutOffData?.competitionRate || 0}:1`,
-        recommendation: rec.probability === '안정' ? 'safe' : rec.probability === '적정' ? 'optimal' : 'challenge',
+        admissionStrategy: rec.admissionStrategy || '누백 기준 추천',
+        competitionAnalysis: rec.competitionAnalysis || `적정 누백: ${rec.appropriateNubaek?.toFixed(2) || 0}%`,
+        recommendation: rec.recommendation || 'safe',
         reflectionRatio: '반영비율 정보 없음',
         admissionData: {
-          lastYear: { score: rec.cutOffData?.grade50 || 0, students: 0 },
-          threeYearAvg: { score: rec.cutOffData?.grade50 || 0, students: 0 },
+          lastYear: { score: 0, students: 0 },
+          threeYearAvg: { score: 0, students: 0 },
           yearlyData: []
-        }
+        },
+        nubaek: rec.nubaek,
+        appropriateNubaek: rec.appropriateNubaek,
+        expectedNubaek: rec.expectedNubaek,
+        minimumNubaek: rec.minimumNubaek
       } as DetailedUniversity))
   };
 
