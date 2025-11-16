@@ -296,12 +296,13 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         });
 
         if (recommendedUniversities.length > 0 && recommendedDepartments.length > 0) {
+          // admission_type 필터 제거 (실제 데이터는 대학명이 admission_type에 저장됨)
+          // 대학명과 학과명으로만 매칭
           const { data: configData, error: configError } = await supabase
             .from('university_config')
             .select('*')
             .in('university_name', recommendedUniversities)
             .in('department_name', recommendedDepartments)
-            .eq('admission_type', '정시')
             .eq('exam_type', examType === 'science' ? '이과' : '문과')
             .eq('exam_year', examYear);
 
