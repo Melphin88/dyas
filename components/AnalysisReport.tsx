@@ -227,6 +227,9 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
       
       // exam_yyyymm 결정 (학생의 최신 성적 데이터에서 exam_year와 exam_month를 조합)
       let examYyyymm = 202509; // 기본값
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = currentDate.getMonth() + 1;
       
       if (latestExamGrades) {
         const year = latestExamGrades.exam_year;
@@ -243,10 +246,6 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         examYyyymm = parseInt(`${year}${monthStr}`);
       } else {
         // fallback: 현재 날짜 기준
-        const currentDate = new Date();
-        const currentYear = currentDate.getFullYear();
-        const currentMonth = currentDate.getMonth() + 1;
-        
         examYyyymm = currentMonth >= 9 
           ? parseInt(`${currentYear}09`) 
           : parseInt(`${currentYear - 1}09`);
@@ -277,15 +276,27 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
 
         // university_config에서 반영비율 정보 가져오기
         const configMap: Record<string, any> = {};
+        // cutline_year_used는 입학 연도이므로 그대로 사용
         const examYear = result.data.metadata.cutline_year_used || 
           (currentMonth >= 9 ? currentYear + 1 : currentYear);
         
-        if (result.data.preferred_majors && result.data.preferred_majors.length > 0) {
-          // 추천된 대학 목록 추출
-          const recommendedUniversities = result.data.recommendations.map((r: any) => r.university_name);
-          const recommendedDepartments = result.data.recommendations.map((r: any) => r.department_name);
-          
-          const { data: configData } = await supabase
+        console.log('반영비율 조회 파라미터:', {
+          examYear,
+          examType: examType === 'science' ? '이과' : '문과',
+          recommendedCount: result.data.recommendations.length
+        });
+        
+        // 추천된 대학 목록 추출
+        const recommendedUniversities = [...new Set(result.data.recommendations.map((r: any) => r.university_name))];
+        const recommendedDepartments = [...new Set(result.data.recommendations.map((r: any) => r.department_name))];
+        
+        console.log('추천 대학 목록:', {
+          universities: recommendedUniversities,
+          departments: recommendedDepartments
+        });
+
+        if (recommendedUniversities.length > 0 && recommendedDepartments.length > 0) {
+          const { data: configData, error: configError } = await supabase
             .from('university_config')
             .select('*')
             .in('university_name', recommendedUniversities)
@@ -294,11 +305,23 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
             .eq('exam_type', examType === 'science' ? '이과' : '문과')
             .eq('exam_year', examYear);
 
-          if (configData) {
+          if (configError) {
+            console.error('university_config 조회 오류:', configError);
+          }
+
+          if (configData && configData.length > 0) {
+            console.log('반영비율 데이터 조회 성공:', configData.length, '개');
             configData.forEach((config: any) => {
               const key = `${config.university_name}_${config.department_name}`;
               configMap[key] = config;
+              console.log(`반영비율 매핑: ${key}`, {
+                korean: config.korean_weight,
+                math: config.math_weight,
+                inquiry: config.inquiry_weight
+              });
             });
+          } else {
+            console.warn('반영비율 데이터를 찾을 수 없습니다. exam_year:', examYear);
           }
         }
 
@@ -308,6 +331,15 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
         const convertedRecommendations = result.data.recommendations.map((rec: any) => {
           const configKey = `${rec.university_name}_${rec.department_name}`;
           const config = configMap[configKey];
+          
+          console.log(`추천 대학 변환: ${rec.university_name} ${rec.department_name}`, {
+            hasConfig: !!config,
+            passRate: rec.pass_rate,
+            colorCode: rec.color_code,
+            koreanWeight: config?.korean_weight,
+            mathWeight: config?.math_weight,
+            inquiryWeight: config?.inquiry_weight
+          });
           
           return {
             university: rec.university_name,
@@ -326,9 +358,9 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
             appropriateNubaek: rec.appropriate_nubaek,
             expectedNubaek: rec.expected_nubaek,
             minimumNubaek: rec.minimum_nubaek,
-            passRate: rec.pass_rate, // 합격률 추가
-            colorCode: rec.color_code, // 색상 코드 추가
-            examYear: rec.exam_year, // 데이터 연도 추가
+            passRate: rec.pass_rate || 0, // 합격률 추가 (기본값 0)
+            colorCode: rec.color_code || 'Yellow', // 색상 코드 추가 (기본값 Yellow)
+            examYear: rec.exam_year || examYear, // 데이터 연도 추가
             koreanWeight: config?.korean_weight || 0,
             mathWeight: config?.math_weight || 0,
             inquiryWeight: config?.inquiry_weight || 0
