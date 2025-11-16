@@ -423,12 +423,23 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
   };
 
   const getSuneungSubjectData = () => {
+    // 최신 student_grades 테이블 데이터 우선 사용
+    if (latestExamGrades) {
+      return [
+        { subject: '국어', grade: latestExamGrades.korean_grade || 0, percentile: latestExamGrades.korean_percentile || 0 },
+        { subject: '수학', grade: latestExamGrades.math_grade || 0, percentile: latestExamGrades.math_percentile || 0 },
+        { subject: '영어', grade: latestExamGrades.english_grade || 0, percentile: 0 },
+        { subject: '한국사', grade: latestExamGrades.k_history_grade || 0, percentile: 0 },
+        { subject: '탐구1', grade: latestExamGrades.inquiry1_grade || 0, percentile: latestExamGrades.inquiry1_percentile || 0 },
+        { subject: '탐구2', grade: latestExamGrades.inquiry2_grade || 0, percentile: latestExamGrades.inquiry2_percentile || 0 }
+      ].filter(item => item.grade > 0);
+    }
+
+    // fallback: simpleSuneungData 사용
     if (simpleSuneungData) {
-      // 새로운 구조인지 확인
       const isNewStructure = simpleSuneungData.korean && typeof simpleSuneungData.korean === 'object' && 'grade' in simpleSuneungData.korean;
       
       if (isNewStructure) {
-        // 새로운 구조: { grade, standardScore, rawScore }
         return [
           { subject: '국어', grade: simpleSuneungData.korean?.grade || 0, percentile: 0 },
           { subject: '수학', grade: simpleSuneungData.math?.grade || 0, percentile: 0 },
@@ -438,7 +449,6 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
           { subject: '탐구2', grade: simpleSuneungData.inquiry2?.grade || 0, percentile: 0 }
         ].filter(item => item.grade > 0);
       } else {
-        // 이전 구조: 직접 숫자 값
         return [
           { subject: '국어', grade: simpleSuneungData.korean || 0, percentile: 0 },
           { subject: '수학', grade: simpleSuneungData.math || 0, percentile: 0 },
@@ -449,6 +459,7 @@ export function AnalysisReport({ studentId, studentName, grades, simpleGradeData
       }
     }
     
+    // fallback: grades 사용
     if (!grades) return [];
     
     const subjects = [
